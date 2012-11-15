@@ -1,0 +1,122 @@
+
+%% This is a simple example of various ScriptTex features
+
+% A single-line comment starts with %
+
+% ScriptTex "understands" a language largely  inspired by tex/latex
+% however only a small subset of the tex/latex functionalities
+% are supported
+
+%{
+A multiline comment start with %{  and ends  with the next }%.
+And multiline comments can be nested of course.
+}%
+
+\document{article}   % also  report, book  and maybe others later (class system ?)
+
+\title{Simple recursive functions in Python\\
+An example of some ScripTex features}
+
+\author{Frédéric Peschanski}  %% remark : ScriptTex only supports UTF-8 encodings
+
+\date{\today}
+
+
+= Introduction =
+%{ the same as :
+\section{Basic functions}
+in article mode
+}%
+
+We describe a few simple _recursive_ functions in the [Python|http://www.python.org] language. % _word_ translates to \emph{word}
+% a wiki-like syntax for hyperlinks is supported
+
+We see three *classical* functions : %% *word* translates to \strong{word}  and then \textbf{word} by default
+  - the factorial function %% at least two spaces leading the '-' symbol
+  - the fibonacci function
+  - the ackermann function
+%{ this translates to
+\begin{itemize}
+\item the factorial function
+\item the fibonacci function
+\item the ackermann function
+\end{itemize}
+%}
+
+This allows to show the following features.
+  1. the factorial highlights:
+    a. a simple recursive scheme  % at least 2 chars more
+    b. a tail-call variant with a single accumulator
+    c. an imperative variant
+      i) using a while loop  % this is the final nesting, one must use the latex syntax for deeper nesting
+      ii) using a range iterator
+  2. the fibonacci highlights:
+    - a more complex recursive scheme
+    - the use of two accumulators for the tail-call version %  an embedded itemize
+%{ this translates to
+\begin{enumerate}
+\item the factorial hightlights
+\begin{enumerate}
+\item a simple recursive scheme
+
+... etc.
+
+\end{enumerate}
+\end{enumerate}
+%}
+
+== Factorial ==
+%{
+The same as :
+\subsection{Factorial}
+in article mode
+}%
+The factorial function is often denoted $n! = 1 \times \ldots \times n$
+% ScriptTex is interfaced with MathJax for HTML/CSS/JS output of embedded maths
+% it relies on pdflatex or luatex for the pdf output
+
+A more constructive version is:
+
+\[
+\left \{ \begin[t]{array}{l}
+0!=1 \\
+n! = n \times (n-1)! \text{ for } n>0
+\end{array} \right.
+\] % both display math and inline math are supported
+
+This can be almost directly translated to python code :
+
+\begin{code}[language=python] % a code block, support for various programming languages is planned
+def fact(n):
+  if n = 0:
+    return 1
+  else:
+    return n * fact(n-1)
+\end{code}
+
+The name of the function is `fact` and its definition is quite simple. % the `word` sequence is translated to 
+%  \verbUwordU in Latex mode, where the U symbol is choosen fresh.  Not that line feeds are disallowed.
+
+% the langage by default can be set
+\set[defaultcodelanguage=python]
+
+An tail-call version is as follows\footnote{The python interpreter does not eliminate tail calls, but the notion remains interesting anyway.}:
+
+% default language is python now
+\begin{code}[coderef=factit]  
+def fact(n):
+  def factit(n,acc):
+    if n = 0:
+      return acc
+   else:
+      return factit(n-1,n*acc)
+  # body of the function
+  return factit(n,1)
+\end{code}
+
+\begin{evalcode} % a block of code can be evaluated and its (by default, standard) output printed to ScriptTex
+# insertion of code blocks
+\coderef[factit]
+print("fact(4)={0}".format(fact(4))')
+\end{evalcode} % the result of an evalcode must be executable in isolation
+

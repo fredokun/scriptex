@@ -67,11 +67,26 @@ class Tokenizer:
     The main tokenizer class.
     A tokenizer backend must be provided.
     '''
-    pass
+    def Tokenizer(self, tokenizer_backend):
+        self.tokenizer_backend = tokenizer_backend
+
+    @property
+    def pos(self):
+        return self.tokenizer_backend.pos
+
+    @property
+    def peek_char(self):
+        return self.tokenizer_backend.peek_char
 
 
 class TokenizerBackend:
-    pass
+    @property
+    def pos(self):
+        raise NotImplementedError("Abstract method")
+
+    @property
+    def peek_char(self):
+        raise NotImplementedError("Abstract method")
 
 
 class StringTokenizer(TokenizerBackend):
