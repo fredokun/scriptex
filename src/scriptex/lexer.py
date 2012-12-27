@@ -45,7 +45,7 @@ class Token:
             raise NotImplementedError("Abstract method")
 
     class Char(Recognizer):
-        def __init__(self, token_type, char):
+        def __init__(self, token_type='Char', char):
             super.__init__(token_type)
             self.char = char
 
@@ -61,6 +61,81 @@ class Token:
         def __repr__(self):
             return "'{0}'".format(self.char)
 
+    class CharIn(Recognizer):
+        def __init__(self, token_type='Char', *args):
+            super.__init__(token_type)
+            self.charset = {ch for ch in args}
+
+        def recognize(self, tokenizer):
+            start_pos = tokenizer.pos
+            char = tokenizer.peek_char
+            if char in self.charset:
+                tokenizer.next_char
+                return Token(self.token_type, char, start_pos, tokenizer.pos)
+            else:
+                return None
+
+        def __repr__(self):
+            return 'CharIn{0}'.repr(self.charset)
+
+    class CharNotIn(Recognizer):
+        def __init__(self, token_type='Char', *args):
+            super.__init__(token_type)
+            self.charset = {ch for ch in args}
+
+        def recognize(self, tokenizer):
+            start_pos = tokenizer.pos
+            char = tokenizer.peek_char
+            if char not in self.charset:
+                tokenizer.next_char
+                return Token(self.token_type, char, start_pos, tokenizer.pos)
+            else:
+                return None
+
+        def __repr__(self):
+            return 'CharNotIn{0}'.repr(self.charset)
+
+    class AnyOf(Recognizer):
+        def __init__(self, token_type='NotIn', *args):
+            self.recognizers = args
+
+        def recognize(self, tokenizer):
+            start_pos = tokenizer.pos
+            for recognizer in self.recognizers:
+                token = recognizer.recognize(tokenizer)
+                if token is not None:
+                    return token
+                tokenizer.set_pos(start_pos)
+            # nothing recognized
+
+        def __repr__(self):
+            return "AnyOf{0}".format(repr(self.recognizers))
+
+    class Repeat(Recognizer):
+        def __init__(self, token_type='Repeat', recognizer, minimum=0):
+            self.recognizer = recognizer
+            self.minimum = minimum
+
+        def recognizer(self, tokenizer):
+            nb_rec = 0
+            tokens = []
+            start_pos = tokenizer.pos
+            while True:
+                token = self.recognizer.recognize(tokenizer)
+                if token is not None:
+                    nb_rec += 1
+                    tokens.append(token)
+                else:
+                    if nb_rec < self.minimum:
+                        tokenizer.set_pos(start_pos)
+                        return None
+                    else:
+                        return tokens
+
+        def __repr__(self):
+            return "Repeat({0}, minimum={1})".format(repr(self.recognizer),
+                                                     self.minimum)
+
 
 class Tokenizer:
     '''
@@ -73,6 +148,9 @@ class Tokenizer:
     @property
     def pos(self):
         return self.tokenizer_backend.pos
+
+    def set_pos(self, pos):
+        self.tokenizer_backend.move_to(pos.offset)
 
     @property
     def peek_char(self):
@@ -93,5 +171,13 @@ class StringTokenizer(TokenizerBackend):
     pass
 
 
+def make_string_tokenizer(input_string):
+    return Tokenizer(StringTokenizer(input_string))
+
+
 class FileTokenizer(TokenizerBackend):
+    pass
+
+
+def make_file_tokenizer(filename):
     pass
