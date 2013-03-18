@@ -45,14 +45,16 @@ class Recognizer:
 
 class Char(Recognizer):
     def __init__(self, char, token_type='Char'):
-        super.__init__(token_type)
+        super().__init__(token_type)
         self.char = char
 
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
         char = tokenizer.peek_char
+        if char is None:
+            return None
         if char == self.char:
-            tokenizer.next_char
+            tokenizer.next_char()
             return Token(self.token_type, char, start_pos, tokenizer.pos)
         else:
             return None
@@ -62,14 +64,16 @@ class Char(Recognizer):
 
 class CharIn(Recognizer):
     def __init__(self, token_type='Char', *args):
-        super.__init__(token_type)
+        super().__init__(token_type)
         self.charset = {ch for ch in args}
         
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
         char = tokenizer.peek_char
+        if char is None:
+            return None
         if char in self.charset:
-            tokenizer.next_char
+            tokenizer.next_char()
             return Token(self.token_type, char, start_pos, tokenizer.pos)
         else:
             return None
@@ -79,14 +83,16 @@ class CharIn(Recognizer):
 
 class CharNotIn(Recognizer):
     def __init__(self, token_type='Char', *args):
-        super.__init__(token_type)
+        super().__init__(token_type)
         self.charset = {ch for ch in args}
 
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
         char = tokenizer.peek_char
+        if char is None:
+            return None
         if char not in self.charset:
-            tokenizer.next_char
+            tokenizer.next_char()
             return Token(self.token_type, char, start_pos, tokenizer.pos)
         else:
             return None
@@ -96,87 +102,62 @@ class CharNotIn(Recognizer):
 
 class Regexp(Recognizer):
     def __init__(self, regexp, re_flags=0, token_type='Regexp'):
-        super.__init__(token_type)
+        super().__init__(token_type)
+        import re
         self.regexp = re.compile(regexp, re_flags)
 
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
         line = tokenizer.peek_line
+        if line == "":
+            return None
         match = self.regexp.match(line)
         if match is not None:
-            tokenizer.advance(len(match.group(0)))
+            tokenizer.forward(len(match.group(0)))
             return Token(self.token_type, match, start_pos, tokenizer.pos)
         else:
             return None
 
-class AnyOf(Recognizer):
-    def __init__(self, token_type=None, *args):
-        self.recognizers = args
-
-    def recognize(self, tokenizer):
-        start_pos = tokenizer.pos
-        for recognizer in self.recognizers:
-            token = recognizer.recognize(tokenizer)
-            if token is not None:
-                return token
-            tokenizer.set_pos(start_pos)
-        # nothing recognized
-        return None
-
-    def __repr__(self):
-        return "AnyOf{0}".format(repr(self.recognizers))
-
-class Repeat(Recognizer):
-    def __init__(self, recognizer, minimum=0, token_type=None):
-        self.recognizer = recognizer
-        self.minimum = minimum
-        
-    def recognizer(self, tokenizer):
-        nb_rec = 0
-        tokens = []
-        start_pos = tokenizer.pos
-        while True:
-            token = self.recognizer.recognize(tokenizer)
-            if token is not None:
-                nb_rec += 1
-                tokens.append(token)
-            else:
-                if nb_rec < self.minimum:
-                    tokenizer.set_pos(start_pos)
-                    return None
-                else:
-                    return tokens
-
-    def __repr__(self):
-        return "Repeat({0}, minimum={1})".format(repr(self.recognizer),
-                                                     self.minimum)
 class Tokenizer:
     '''
     The main tokenizer class.
     A tokenizer backend must be provided.
     '''
-    def Tokenizer(self, tokenizer_backend):
+    def __init__(self, tokenizer_backend):
         self.tokenizer_backend = tokenizer_backend
 
     @property
     def pos(self):
-        return self.tokenizer_backend.pos
+        return self.tokenizer_backend.pos()
 
     def set_pos(self, pos):
         self.tokenizer_backend.move_to(pos.offset)
 
+    def reset(self):
+        self.tokenizer_backend.move_to(0)
+
     @property
     def peek_char(self):
-        return self.tokenizer_backend.peek_char
+        return self.tokenizer_backend.peek_char()
+
+    @property
+    def peek_line(self):
+        return self.tokenizer_backend.peek_line()
 
     def next_char(self):
-        self.advance(1)
+        return self.tokenizer_backend.next_char()
 
-    def advance(self, nb_chars):
-        self.tokenizer_backend.advance(nb_chars) 
+    def forward(self, nb_chars):
+        self.tokenizer_backend.forward(nb_chars) 
 
     def peek_chars(self, nb_chars):
         return self.tokenizer_backend.peek_chars(nb_chars)
+
+    def show_lines(self, nb_lines, cursor="_"):
+        return self.tokenizer_backend.show_lines(nb_lines, cursor)
+
+    def show_line(self, cursor="_"):
+        return self.show_lines(1, cursor)
 
 class TokenError(Exception):
     pass
@@ -255,6 +236,13 @@ class StringTokenizer(TokenizerBackend):
       ...
     AssertionError: cannot move foward at end of input
 
+
+    >>> tokens.move_to(2)
+    'llo crazy\\nworld'
+
+    >>> tokens.move_to(14)
+    'llo crazy\\nwo'
+
     """
     def __init__(self, input_string):
         self.offset = 0
@@ -263,7 +251,7 @@ class StringTokenizer(TokenizerBackend):
         self.eol_map = dict() # Map: offset of newline -> last character pos
         self.input_string = input_string
         self.input_length = len(input_string)
-
+    
     def pos(self):
         return ParsePosition(self.lpos, self.cpos, self.offset)
 
@@ -272,8 +260,20 @@ class StringTokenizer(TokenizerBackend):
 
     def peek_char(self):
         if self.at_eof():
-            raise TokenError("Cannot peek char at end of in input")
+            return None
         return self.input_string[self.offset]
+
+    def peek_line(self):
+        line = ""
+        offset = self.offset
+        while offset < self.input_length:
+            ch = self.input_string[offset]
+            if ch == '\n':
+                return line
+            else:
+                line += ch
+                offset += 1
+        return line
 
     def next_char(self):
         assert self.offset < self.input_length, "cannot move foward at end of input"
@@ -311,6 +311,40 @@ class StringTokenizer(TokenizerBackend):
         for i in range(nb_chars):
             ret = self.prev_char() + ret
         return ret
+
+    def move_to(self, noffset):
+        if noffset >= self.offset:
+            return self.forward(noffset - self.offset)
+        else:
+            return self.backward(self.offset - noffset)
+
+    def find_start_of_line(self, soffset):
+        """Find the start of the current line.
+
+        >>> tokens = StringTokenizer("hello crazy\\nworld")
+        >>> tokens.find_start_of_line(14)
+        12
+        """
+        while soffset > 0:
+            if self.input_string[soffset-1] == '\n':
+                return soffset
+            else:
+                soffset -= 1
+        return soffset
+    
+    def show_lines(self, nb_lines, cursor):
+        nb_found = 0
+        soffset = self.find_start_of_line(self.offset)
+        ret = ""
+        while (nb_found <= nb_lines) and (soffset < self.input_length):
+            ch = self.input_string[soffset]
+            if ch == '\n':
+                nb_found += 1
+            if soffset == self.offset:
+                ret += cursor
+            ret += ch
+            soffset += 1
+        return ret
     
 def make_string_tokenizer(input_string):
     return Tokenizer(StringTokenizer(input_string))
@@ -320,6 +354,35 @@ class FileTokenizer(TokenizerBackend):
     pass
 
 
+class Lexer:
+    def __init__(self, tokenizer, *recognizers):
+        self.tokenizer = tokenizer
+        self.recognizers = [ r for r in recognizers ]
+
+    def next_token(self):
+        for rec in self.recognizers:
+            token = rec.recognize(self.tokenizer)
+            if token is not None:
+                return token
+        return None
+
+    class _Iterator:
+        def __init__(self, lexer):
+            self.lexer = lexer
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            token = self.lexer.next_token()
+            if token is None:
+                raise StopIteration()
+            else:
+                return token
+
+    def __iter__(self):
+        return Lexer._Iterator(self)
+            
 def make_file_tokenizer(filename):
     pass
 
