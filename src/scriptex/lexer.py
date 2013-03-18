@@ -2,7 +2,6 @@
 The ScripTeX lexer
 '''
 
-
 class ParsePosition:
     '''
     Representation of parse positions (immutable structure).
@@ -180,8 +179,7 @@ class Tokenizer:
         return self.tokenizer_backend.peek_chars(nb_chars)
 
 class TokenError(Exception):
-    def __init__(self, msg):
-        super.__init__(msg)
+    pass
 
 class TokenizerBackend:
     @property
@@ -207,14 +205,62 @@ class StringTokenizer(TokenizerBackend):
     'hello'
     >>> tokens.pos()
     ParsePosition(lpos=1, cpos=6, offset=5)
-    
-    
+
+    >>> tokens.forward(6)
+    ' crazy'
+
+    >>> tokens.pos()
+    ParsePosition(lpos=1, cpos=12, offset=11)
+
+    >>> tokens.next_char()
+    '\\n'
+
+    >>> tokens.pos()
+    ParsePosition(lpos=2, cpos=1, offset=12)
+
+    >>> tokens.prev_char()
+    '\\n'
+
+    >>> tokens.pos()
+    ParsePosition(lpos=1, cpos=12, offset=11)
+
+    >>> tokens.backward(6)
+    ' crazy'
+
+    >>> tokens.pos()
+    ParsePosition(lpos=1, cpos=6, offset=5)
+
+    >>> tokens.backward(5)
+    'hello'
+
+    >>> tokens.pos()
+    ParsePosition(lpos=1, cpos=1, offset=0)
+
+    >>> tokens.prev_char()
+    Traceback (most recent call last):
+      ...
+    AssertionError: cannot move backward at start of input
+
+    >>> tokens.forward(16)
+    'hello crazy\\nworl'
+
+    >>> tokens.next_char()
+    'd'
+
+    >>> tokens.at_eof()
+    True
+
+    >>> tokens.next_char()
+    Traceback (most recent call last):
+      ...
+    AssertionError: cannot move foward at end of input
+
     """
     def __init__(self, input_string):
         self.offset = 0
         self.lpos = 1
         self.cpos = 1
-        self.eol_set = set()
+        self.eol_map = dict() # Map: offset of newline -> last character pos
         self.input_string = input_string
         self.input_length = len(input_string)
 
@@ -230,24 +276,42 @@ class StringTokenizer(TokenizerBackend):
         return self.input_string[self.offset]
 
     def next_char(self):
+        assert self.offset < self.input_length, "cannot move foward at end of input"
         ch = self.peek_char()
-        if ch == r'\n':
-            self.eol_set.add(self.offset)
+        if ch == '\n':
+            self.eol_map[self.offset] = self.cpos
             self.lpos += 1
             self.cpos = 0
         # in any case
         self.cpos += 1
         self.offset += 1
         return ch
-    
+
     def forward(self, nb_chars):
         ret = ""
         for i in range(nb_chars):
             ret += self.next_char()
         return ret
-    
-    
 
+    def prev_char(self):
+        assert self.offset >= 1, "cannot move backward at start of input"
+        if (self.offset - 1) in self.eol_map:
+            # cancel a new line
+            self.lpos -= 1
+            self.cpos = self.eol_map[self.offset-1]
+            del self.eol_map[self.offset-1]
+        else:
+            self.cpos -= 1
+        # finally decrement the offset
+        self.offset -= 1
+        return self.input_string[self.offset]
+    
+    def backward(self, nb_chars):
+        ret = ""
+        for i in range(nb_chars):
+            ret = self.prev_char() + ret
+        return ret
+    
 def make_string_tokenizer(input_string):
     return Tokenizer(StringTokenizer(input_string))
 
