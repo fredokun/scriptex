@@ -22,7 +22,7 @@ class TestLexerString(unittest.TestCase):
         token = underscore.recognize(tokens)
         self.assertEqual(token.type,'underscore')
         self.assertEqual(token.value,'_')
-        self.assertEqual(tokens.show_line(cursor="<>") , "_<>example in emphasis_")
+        self.assertEqual(tokens.show_lines(1,cursor="<>") , "_<>example in emphasis_")
         self.assertEqual(tokens.pos.offset,1)
 
         token = underscore.recognize(tokens)
@@ -43,6 +43,15 @@ class TestLexerString(unittest.TestCase):
 
         tokens.reset()
         lexer = scriptex.lexer.Lexer(tokens, underscore, space, word)
+        token = lexer.next()
+        self.assertEqual(token.type, 'underscore')
+        token = lexer.next()
+        self.assertEqual(token.type, 'word')
+        lexer.putback(token)
+        token = lexer.next()
+        self.assertEqual(token.type, 'word')
+
+        tokens.reset()
         toks = [ tok for tok in lexer ]
         self.assertEqual([tok.type for tok in toks],['underscore', 'word', 'space', 'word', 'space', 'word', 'underscore'])
         

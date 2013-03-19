@@ -4,9 +4,10 @@ The ScripTeX lexer
 
 class ParsePosition:
     '''
-    Representation of parse positions (immutable structure).
+    Representation of parse positions.
+
     A parse position is a line position, a character position
-    and an absolute offset
+    and an absolute offset into a character buffer.
     '''
     def __init__(self, lpos, cpos, offset):
         self.lpos = lpos
@@ -120,8 +121,10 @@ class Regexp(Recognizer):
 
 class Tokenizer:
     '''
-    The main tokenizer class.
-    A tokenizer backend must be provided.
+    The main tokenizer class that transforms a flow
+    of characters into a flow of tokens.
+
+    A tokenizer backend must be provided at initialization time.
     '''
     def __init__(self, tokenizer_backend):
         self.tokenizer_backend = tokenizer_backend
@@ -155,9 +158,6 @@ class Tokenizer:
 
     def show_lines(self, nb_lines, cursor="_"):
         return self.tokenizer_backend.show_lines(nb_lines, cursor)
-
-    def show_line(self, cursor="_"):
-        return self.show_lines(1, cursor)
 
 class TokenError(Exception):
     pass
@@ -355,16 +355,38 @@ class FileTokenizer(TokenizerBackend):
 
 
 class Lexer:
+    '''The lexer generates the flow of tokens from
+    the tokenizer.
+
+    '''
     def __init__(self, tokenizer, *recognizers):
         self.tokenizer = tokenizer
         self.recognizers = [ r for r in recognizers ]
 
-    def next_token(self):
+    @property
+    def pos(self):
+        return self.tokenizer.pos()
+
+    def show_line(self, cursor="_"):
+        return self.show_lines(1, cursor)
+
+    def show_lines(self, nb_lines, cursor="_"):
+        return self.tokenizer.show_lines(nb_lines, cursor)
+
+    def next(self):
         for rec in self.recognizers:
             token = rec.recognize(self.tokenizer)
             if token is not None:
                 return token
         return None
+
+    def putback(self, token):
+        """Put back a token in the lexer.
+        Warning: this does not check the token was the correct
+        one, only we go back to the position corresponding
+        to the start of the token.
+        """
+        self.tokenizer.set_pos(token.start_pos)
 
     class _Iterator:
         def __init__(self, lexer):
@@ -374,7 +396,7 @@ class Lexer:
             return self
 
         def __next__(self):
-            token = self.lexer.next_token()
+            token = self.lexer.next()
             if token is None:
                 raise StopIteration()
             else:
