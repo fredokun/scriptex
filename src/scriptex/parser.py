@@ -73,7 +73,7 @@ class Literal(AbstractParser):
     "Cannot parse literal 'hello': expect value 'hello', got '{'"
 
     """
-    def __init__(self, literal=None, token_type=None):
+    def __init__(self, token_type=None, literal=None):
         super().__init__()
         self.literal = literal
         self.token_type = token_type
@@ -105,7 +105,19 @@ class Literal(AbstractParser):
         return token
 
 class Tuple(AbstractParser):
+    r"""Parser for a tuple of subparsers.
+
+    >>> input = lexer.Lexer(lexer.make_string_tokenizer("\hello{world}"),lexer.Literal("hello_lit", "hello"),lexer.Literal("world_lit","world"),lexer.Char("backslash", '\\'),lexer.CharIn("bracket",'{','}'))
+
+    >>> parser = ParsingAlgo(input)
+    >>> parser.parser = Tuple(Literal(token_type="backslash"), Literal("hello_lit", "hello"), Literal(token_type="bracket"), Literal("world_lit", "world"), Literal(token_type="bracket"))
+
+    >>> [(v.value,v.type) for v in parser.parse()]
+    [('\\', 'backslash'), ('hello', 'hello_lit'), ('{', 'bracket'), ('world', 'world_lit'), ('}', 'bracket')]
+
+    """
     def __init__(self, *parsers):
+        super().__init__()
         self.parsers = parsers
         self.description = None
 
@@ -125,6 +137,26 @@ class Tuple(AbstractParser):
                 res.append(parsed)
         return res
 
+class Choice(AbstractParser):
+    def __init__(self, *parsers):
+        self.parser = parsers
+        self.description = None
+
+    @property
+    def describe(self):
+        if self.description is None:
+            self.description = " / ".join(p.describe for p in self.parsers)
+        return self.description
+
+    def do_parse(self,parser):
+        start_pos = parser.pos
+        parsed = None
+        for p in self.parsers:
+            parsed = p.parse(parser)
+            if not is_parse_error(parsed):
+                return parsed
+        # everything failed
+        return ParseError("Cannot parse: {}".format(self.description), start_pos, parser.pos)
 
 if __name__ == "__main__":
     import doctest

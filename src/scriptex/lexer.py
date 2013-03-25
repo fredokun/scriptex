@@ -280,7 +280,7 @@ class StringTokenizer(TokenizerBackend):
     def peek_chars(self, nb_chars):
         ret = ""
         for i in range(nb_chars):
-            if i>= self.input_length:
+            if self.offset+i>= self.input_length:
                 return None
             ret += self.input_string[self.offset+i]
         return ret
