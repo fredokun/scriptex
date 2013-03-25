@@ -80,7 +80,14 @@ class Literal(AbstractParser):
 
     @property
     def describe(self):
-        return "'{}'".format(self.literal)
+        ret = ""
+        if self.token_type is not None:
+            ret += "{{{}}}".format(self.token_type)
+        if self.literal is not None:
+            if self.token_type is not None:
+                ret += ":"
+            ret += "'{}'".format(self.literal)
+        return ret
 
     def do_parse(self, parser):
         #import pdb ; pdb.set_trace()
@@ -138,8 +145,37 @@ class Tuple(AbstractParser):
         return res
 
 class Choice(AbstractParser):
+    r"""Parser for a choice of subparsers.
+
+    Note: there is no look-ahead and only right recursion is allowed.
+
+    >>> input = lexer.Lexer(lexer.make_string_tokenizer("\hello{world}"),lexer.Literal("hello_lit", "hello"),lexer.Literal("world_lit","world"),lexer.Char("backslash", '\\'),lexer.CharIn("bracket",'{','}'))
+
+    >>> parser = ParsingAlgo(input)
+    >>> parser.parser = Choice(Literal(token_type="backslash"), Literal("hello_lit", "hello"), Literal(token_type="bracket"), Literal("world_lit", "world"), Literal(token_type="bracket"))
+
+    >>> parser.parse().value
+    '\\'
+
+    >>> parser.parse().value
+    'hello'
+
+    >>> parser.parse().value
+    '{'
+    
+    >>> parser.parse().value
+    'world'
+
+    >>> parser.parse().value
+    '}'
+
+    >>> parser.parse().msg
+    "Cannot parse: {backslash} / {hello_lit}:'hello' / {bracket} / {world_lit}:'world' / {bracket}"
+
+    """
     def __init__(self, *parsers):
-        self.parser = parsers
+        super().__init__()
+        self.parsers = parsers
         self.description = None
 
     @property
@@ -156,7 +192,7 @@ class Choice(AbstractParser):
             if not is_parse_error(parsed):
                 return parsed
         # everything failed
-        return ParseError("Cannot parse: {}".format(self.description), start_pos, parser.pos)
+        return ParseError("Cannot parse: {}".format(self.describe), start_pos, parser.pos)
 
 if __name__ == "__main__":
     import doctest
