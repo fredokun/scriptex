@@ -1,65 +1,70 @@
 
+'''
+The basic ScripTex markup language
+'''
+
+class AbstractMarkup:
+    """Abstract representation of markup objects.
+
+    A markup object is roughly like a function that takes
+    a text to parse, detects a given markup in the input,
+    and produces some output and/or effects based on the parsed
+    information.  The most common result of a markup detection is
+    to return an abstract syntax tree built from the parsed input.
+
+    Note that markup objects can be nested.
+    
+    Internally, a markup embeds a parser and an abstract syntax
+    tree builder.
+    """
+    def __init__(self, markup_type):
+        self.markup_type = markup_type
+
+class AbstractElement(AbstractMarkup):
+    """The base abstract class for element markups.
+
+    Element markup objects cannot nest.
+    """
+    def __init__(self, markup_type):
+        super().__init__(markup_type)
+
+class AbstractStructure(AbstractMarkup):
+    """The base abstract class for structure markups.
+
+    Structure markup objects can (and most often do) nest.
+    """
+    def __init__(self, markup_type):
+        super().__init__(markup_type)
+
 #------------------------------------------------------------------------------#
-#   Abstract blocks                                                            #
+#   Documents                                                                  #
 #------------------------------------------------------------------------------#
 
-class AbstractBlock:
-    '''Abstract representation of a document block.
-    '''
-    def __init__(self, start_pos, end_pos):
-        self._start_pos = start_pos
-        self._end_pos = end_pos
+def BASE_DOCUMENT_TOKENIZERS():
+    tks = [ lexer.CharIn("space-or-newline", ' ', '\t', '\r', '\n'),
+            lexer.CharIn("space-not-newline", ' ', '\t'),
+            lexer.CharIn("newline-only", '\n')
+            ]
 
-    @property
-    def start_pos(self):
-        return self._start_pos
-
-    @property
-    def end_pos(self):
-        return self._end_pos
-
-class AbstractElement(AbstractBlock):
-    '''Common representation of non-sectionning blocks, or elements.
-    '''
-    def __init__(self, start_pos, end_pos):
-        AbstractBlock.__init__(self, start_pos, end_pos)
-
-class AbstractSection(AbstractBlock):
-    '''Common representation of sectionning blocks.
-    A section is simply a container block associated
-    to a list of sub-blocks.
-    '''
-    def __init__(self, start_pos, end_pos):
-        AbstractBlock.__init__(self, start_pos, end_pos)
-        self._kind = self.__class__.__name__
-        self._blocks = []
-
-    @property
-    def kind(self):
-        return self._kind
-
-    def __repr__(self):
-        return "Section({0})\{{1}\}".format(self.kind, repr(self._blocks))
-
+class Document(AbstractStructure):
+    def __init__(self):
+        super().__init__("document")
+        self.tokenizers = BASE_DOCUMENT_TOKENIZERS()
+        
+    
 #------------------------------------------------------------------------------#
 #   Comments                                                                   #
 #------------------------------------------------------------------------------#
-        
-class LineComment(AbstractElement):
-    """Representation of line comments.
-    A line comment starts with a '%' character followed by at least a space,
-    and terminates at the end of the line.
-    A line comment can also be introduced with the \comment{...} command.
-    In this case the formatting within the comment is preserved, however
-    it is still a non-nesting comment.
-    """
-    def __init__(self, start_pos, end_pos, comment):
-        AbstractElement.__init__(self, start_pos, end_pos)
-        self.comment = comment
 
-    def __repr__(self):
-        return 'LineComment("{}")'.format(self.comment)
-    
+class LineComment(AbstractElement):
+    def __init__(self):
+        super().__init__("line_comment")
+        self.tokenizers = [ lexer.Regexp('line-comment', '%.*') ]
+        self.parsers = [ parser.Literal(token_type='line-comment') ]    
+
+    def on_parse(self, translator, parsed):
+        pass
+
 class NestComment(AbstractSection):
     """Representation of nested comments.
     A nested comment can be introduced with the syntax
@@ -71,6 +76,8 @@ class NestComment(AbstractSection):
     """
     def __init__(self, start_pos, end_pos):
         AbstractSection.__init__(self, start_pos, end_pos)
+        
+
 
 #------------------------------------------------------------------------------#
 #   Paragraphs and sections                                                    #
