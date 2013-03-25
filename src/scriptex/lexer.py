@@ -45,7 +45,7 @@ class Recognizer:
         raise NotImplementedError("Abstract method")
 
 class Char(Recognizer):
-    def __init__(self, char, token_type='Char'):
+    def __init__(self, token_type, char):
         super().__init__(token_type)
         self.char = char
 
@@ -64,7 +64,7 @@ class Char(Recognizer):
             return "'{0}'".format(self.char)
 
 class CharIn(Recognizer):
-    def __init__(self, token_type='Char', *args):
+    def __init__(self, token_type, *args):
         super().__init__(token_type)
         self.charset = {ch for ch in args}
         
@@ -83,7 +83,7 @@ class CharIn(Recognizer):
         return 'CharIn{0}'.repr(self.charset)
 
 class CharNotIn(Recognizer):
-    def __init__(self, token_type='Char', *args):
+    def __init__(self, token_type, *args):
         super().__init__(token_type)
         self.charset = {ch for ch in args}
 
@@ -101,8 +101,22 @@ class CharNotIn(Recognizer):
     def __repr__(self):
         return 'CharNotIn{0}'.repr(self.charset)
 
+class Literal(Recognizer):
+    def __init__(self, token_type, literal):
+        super().__init__(token_type)
+        self.literal = literal
+
+    def recognize(self, tokenizer):
+        start_pos = tokenizer.pos
+        ret = tokenizer.peek_chars(len(self.literal))
+        if ret == self.literal:
+            tokenizer.forward(len(self.literal))
+            return Token(self.token_type, ret, start_pos, tokenizer.pos)
+        else:
+            return None
+
 class Regexp(Recognizer):
-    def __init__(self, regexp, re_flags=0, token_type='Regexp'):
+    def __init__(self, token_type, regexp, re_flags=0):
         super().__init__(token_type)
         import re
         self.regexp = re.compile(regexp, re_flags)
@@ -263,6 +277,14 @@ class StringTokenizer(TokenizerBackend):
             return None
         return self.input_string[self.offset]
 
+    def peek_chars(self, nb_chars):
+        ret = ""
+        for i in range(nb_chars):
+            if i>= self.input_length:
+                return None
+            ret += self.input_string[self.offset+i]
+        return ret
+
     def peek_line(self):
         line = ""
         offset = self.offset
@@ -365,7 +387,7 @@ class Lexer:
 
     @property
     def pos(self):
-        return self.tokenizer.pos()
+        return self.tokenizer.pos
 
     def show_line(self, cursor="_"):
         return self.show_lines(1, cursor)
@@ -373,7 +395,7 @@ class Lexer:
     def show_lines(self, nb_lines, cursor="_"):
         return self.tokenizer.show_lines(nb_lines, cursor)
 
-    def next(self):
+    def __next__(self):
         for rec in self.recognizers:
             token = rec.recognize(self.tokenizer)
             if token is not None:
@@ -388,22 +410,8 @@ class Lexer:
         """
         self.tokenizer.set_pos(token.start_pos)
 
-    class _Iterator:
-        def __init__(self, lexer):
-            self.lexer = lexer
-
-        def __iter__(self):
-            return self
-
-        def __next__(self):
-            token = self.lexer.next()
-            if token is None:
-                raise StopIteration()
-            else:
-                return token
-
     def __iter__(self):
-        return Lexer._Iterator(self)
+        return (self)
             
 def make_file_tokenizer(filename):
     pass

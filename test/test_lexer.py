@@ -13,9 +13,9 @@ import scriptex
 
 class TestLexerString(unittest.TestCase):
     def test_emph(self):
-        underscore = scriptex.lexer.Char('_', token_type="underscore")
+        underscore = scriptex.lexer.Char("underscore", '_')
         space = scriptex.lexer.CharIn("space", ' ', '\t')
-        word = scriptex.lexer.Regexp(r'([^_ \t\n\r\f\v]+)',token_type='word')
+        word = scriptex.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
 
         tokens = scriptex.make_string_tokenizer("_example in emphasis_")
 

@@ -132,7 +132,7 @@ class Text(AbstractElement):
     In ScripTex the content of a textual element must be encoded in UTF-8.
     """
     def __init__(self, start_pos, end_pos, content):
-        AbstractElement.__init__(self, start_pos, end_pos):
+        super().__init__(start_pos, end_pos)
         self._content = content
 
     @property
