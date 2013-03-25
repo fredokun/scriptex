@@ -46,12 +46,11 @@ def BASE_DOCUMENT_TOKENIZERS():
             lexer.CharIn("newline-only", '\n')
             ]
 
-class Document(AbstractStructure):
+class BaseDocument(AbstractStructure):
     def __init__(self):
         super().__init__("document")
         self.tokenizers = BASE_DOCUMENT_TOKENIZERS()
         
-    
 #------------------------------------------------------------------------------#
 #   Comments                                                                   #
 #------------------------------------------------------------------------------#
@@ -60,30 +59,29 @@ class LineComment(AbstractElement):
     def __init__(self):
         super().__init__("line_comment")
         self.tokenizers = [ lexer.Regexp('line-comment', '%.*') ]
-        self.parsers = [ parser.Literal(token_type='line-comment') ]    
+        self.parser = parser.Literal(token_type='line-comment')    
 
     def on_parse(self, translator, parsed):
         pass
 
-class NestComment(AbstractSection):
+class NestComment(AbstractStructure):
     """Representation of nested comments.
     A nested comment can be introduced with the syntax
     %{   ... content ... %}
     or in the latex style :
     \begin{comment} ... \end{comment}
     The interior of the comment will be parsed as usual,
-     however the processing will be disabled.
+     however the processing will be disabled (or not ?).
     """
-    def __init__(self, start_pos, end_pos):
-        AbstractSection.__init__(self, start_pos, end_pos)
-        
+    def __init__(self):
+        AbstractStructure.__init__(self, start_pos, end_pos)
 
 
 #------------------------------------------------------------------------------#
 #   Paragraphs and sections                                                    #
 #------------------------------------------------------------------------------#
 
-class Section(AbstractSection):
+class Section(AbstractStructure):
     """Representation of sections: chapter, section, etc.
     Each section has a level with the following constraints:
     - a paragraph has level 0 and cannot contain any sub-section but
@@ -149,12 +147,14 @@ class Text(AbstractElement):
     def __repr__(self):
         return "Text({})".format(self.content)
 
+class Space(AbstractElement):
+
 
 #------------------------------------------------------------------------------#
 #   Math elements                                                              #
 #------------------------------------------------------------------------------#
 
-class Math(AbstractSection):
+class Math(AbstractStructure):
     """Reprensentation of math formulas.
     A math formula can be either of style:
     - inline using the notation $ ... formula ... $   or \( ... formula ... \)
