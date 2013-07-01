@@ -147,9 +147,6 @@ class Text(AbstractElement):
     def __repr__(self):
         return "Text({})".format(self.content)
 
-class Space(AbstractElement):
-
-
 #------------------------------------------------------------------------------#
 #   Math elements                                                              #
 #------------------------------------------------------------------------------#

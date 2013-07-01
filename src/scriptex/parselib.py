@@ -2,7 +2,7 @@
 The parser framework
 '''
 
-import lexer
+import scriptex.lexer
 
 class ParsingAlgo:
     def __init__(self, lexer):
@@ -44,6 +44,9 @@ class AbstractParser:
     def __init__(self):
         # by default the parsed content is not transformed
         self.xform = lambda parser, content: content
+
+        # by default the parser is *not* skip
+        self.skip = False
 
     def describe(self):
         raise NotImplementedError("Abstract method")
