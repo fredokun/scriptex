@@ -1,9 +1,8 @@
 '''
-The ScripTex parser
+The parser framework
 '''
 
 import lexer
-import ast
 
 class ParsingAlgo:
     def __init__(self, lexer):
