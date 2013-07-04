@@ -119,8 +119,12 @@ class Literal(AbstractParser):
                               "expect value '{1}', got '{2}'".format(self.describe,
                                                                      self.literal,
                                                                      token.value),
-                              token.start_pos, token.end_pos)            
-        return token
+                              token.start_pos, token.end_pos)
+
+        if self.skip:
+            return None
+        else:
+            return token
 
 class Tuple(AbstractParser):
     r"""Parser for a tuple of subparsers.
@@ -208,7 +212,8 @@ class Repeat(AbstractParser):
               return res
 
           # not a parse error
-          res.append(parsed)
+          if parsed is not None:
+              res.append(parsed)
           count += 1
           if count == self.max_count:
             return res

@@ -9,7 +9,7 @@ if __name__ == "__main__":
     sys.path.append("../")
 
 import scriptex.lexer as lexer
-from scriptex.parselib import Choice, Literal, ParsingAlgo
+from scriptex.parselib import Choice, Repeat, Literal, ParsingAlgo
 import scriptex.markup as markup
 
 class ScripTexParser:
@@ -27,7 +27,7 @@ class ScripTexParser:
         self._register_recognizer(lexer.Regexp("line_comment", r"%(\.)*$"))
         self._register_recognizer(lexer.Regexp("end_of_line", r'[\n\r]'))
         self._register_recognizer(lexer.Regexp("space", r'[ \t\f\v]'))
-        self._register_recognizer(lexer.Regexp("spaces", r'[ \t\f\v]*'))
+        self._register_recognizer(lexer.Regexp("spaces", r'[ \t\f\v]+'))
 
         self._register_recognizer(lexer.Regexp("escaped", r"\\[^ \t\r\n\f\v]+"))
 
