@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 import scriptex.lexer as lexer
 from scriptex.parselib import Choice, Literal, ParsingAlgo
-import scriptex.markup
+import scriptex.markup as markup
 
 class ScripTexParser:
     def __init__(self):
@@ -48,7 +48,7 @@ class ScripTexParser:
         recs = [rec for _,rec in self.recognizers.items()]
         print("recs = {}".format(recs))
         lex = lexer.Lexer(tokens, *recs)
-        parser = ParsingAlgo(lexer)
+        parser = ParsingAlgo(lex)
         parser.parser = self.main_parser
 
         return parser.parse()

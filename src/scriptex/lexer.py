@@ -124,7 +124,7 @@ class Regexp(Recognizer):
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
         line = tokenizer.peek_line
-        if line == "":
+        if line == None:
             return None
         match = self.regexp.match(line)
         if match is not None:
@@ -286,6 +286,9 @@ class StringTokenizer(TokenizerBackend):
         return ret
 
     def peek_line(self):
+        if self.offset == self.input_length:
+            return None
+        
         line = ""
         offset = self.offset
         while offset < self.input_length:

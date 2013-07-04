@@ -43,7 +43,8 @@ def is_parse_error(value):
 class AbstractParser:
     def __init__(self):
         # by default the parsed content is not transformed
-        self.xform = lambda parser, content: content
+        self.on_parse = lambda parser, content: content
+        self.on_error = lambda parser, err: err
 
         # by default the parser is *not* skip
         self.skip = False
@@ -55,7 +56,11 @@ class AbstractParser:
         raise NotImplementedError("Abstract method")
 
     def parse(self, parser):
-        return self.xform(parser, self.do_parse(parser))
+        result = self.do_parse(parser)
+        if is_parse_error(result):
+            return self.on_error(parser, result)
+        else:
+            return self.on_parse(parser, result)
 
 class Literal(AbstractParser):
     r"""Parser for a literal token.

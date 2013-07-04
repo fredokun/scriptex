@@ -14,14 +14,14 @@ class TestLexerString(unittest.TestCase):
     def test_line_comment(self):
         parser = ScripTexParser()
 
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = parser.parse_from_string("""
 % this is a comment
     % after some space
 
 """)
 
-        print("ret = " + ret)
-                                    
+        print("ret = " + str(ret))
 
 if __name__ == '__main__':
     unittest.main()
