@@ -2,7 +2,11 @@
 The parser framework
 '''
 
-import scriptex.lexer
+if __name__ == "__main__":
+    import sys
+    sys.path.append("../")
+
+import scriptex.lexer as lexer
 
 class ParsingAlgo:
     def __init__(self, lexer):
@@ -140,7 +144,7 @@ class Tuple(AbstractParser):
         if self.description is None:
             self.description = " ".join(p.describe for p in self.parsers)
         return self.description
-
+    
     def do_parse(self, parser):
         res = []
         for p in self.parsers:
@@ -151,6 +155,64 @@ class Tuple(AbstractParser):
                 res.append(parsed)
         return res
 
+class Repeat(AbstractParser):
+    r"""Parser for a repetition of a subparser.
+
+    >>> input = lexer.Lexer(lexer.make_string_tokenizer("hellohellohello"),lexer.Literal("hello_lit", "hello"),lexer.Literal("world_lit","world"),lexer.Char("backslash", '\\'),lexer.CharIn("bracket",'{','}'))
+
+    >>> parser = ParsingAlgo(input)
+    >>> parser.parser = Repeat(Literal(token_type="hello_lit"))
+
+    >>> [tok.value for tok in parser.parse()]
+    ['hello', 'hello', 'hello']
+
+    """
+    def __init__(self, parser, min_count=0, max_count=-1):
+        super().__init__()
+        self.parser = parser
+        self.description = None
+        assert (min_count >= 0)
+        assert (max_count == -1) or (min_count < max_count)
+        self.min_count = min_count
+        assert (max_count >= -1)
+        self.max_count = max_count
+
+    @property
+    def describe(self):
+        if self.description is None:
+            rept_lbl = ""
+            if self.max_count == 0:
+                if self.min_count == 0:
+                    rept_lbl = "*"
+                elif self.min_count == 1:
+                    rept_lbl = "+"
+                else:
+                    rept_lbl = "[{}...]".format(self.min_count)
+            else:
+                rept_lbl = "[{}..{}]".format(self.min_count, self.max_count)
+                
+            self.description = self.parser.describe + rept_lbl
+
+        return self.description
+
+    def do_parse(self, parser):
+        # BREAKPOINT >>> #import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        res = []
+        count = 0
+        while True:
+          parsed = self.parser.parse(parser)
+          if is_parse_error(parsed):
+            if count < self.min_count:
+              return parsed
+            else:
+              return res
+
+          # not a parse error
+          res.append(parsed)
+          count += 1
+          if count == self.max_count:
+            return res
+    
 class Choice(AbstractParser):
     r"""Parser for a choice of subparsers.
 

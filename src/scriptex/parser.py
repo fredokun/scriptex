@@ -4,6 +4,10 @@ The ScripTex parser
 
 from collections import OrderedDict
 
+if __name__ == "__main__":
+    import sys
+    sys.path.append("../")
+
 import scriptex.lexer as lexer
 from scriptex.parselib import Choice, Literal, ParsingAlgo
 import scriptex.markup as markup
@@ -32,16 +36,17 @@ class ScripTexParser:
 
     def build_parsers(self):
         line_comment = Literal("line_comment")
-        line_comment.xform = lambda _,tok : markup.LineComment(tok.value[1:], tok.start_pos, tok.end_pos)
+        line_comment.on_parse = lambda _,tok : markup.LineComment(tok.value[1:], tok.start_pos, tok.end_pos)
         newline = Literal("end_of_line")
         newline.skip = True
         spaces = Literal("spaces")
         spaces.skip = True
-        
-        self.main_parser = Choice(line_comment,
-                                  newline,
-                                  spaces)
 
+        element = Choice(line_comment,
+                         newline,
+                         spaces)
+        
+        self.main_parser = Repeat(element) 
 
     def parse_from_string(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
