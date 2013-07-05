@@ -218,7 +218,77 @@ class Repeat(AbstractParser):
                 count += 1
                 if count == self.max_count:
                     return res
+
+class Optional(Repeat):
+    def __init__(self, parser):
+        super().__init__(parser, min_count=0, max_count=0)
+
+    @property
+    def describe(self):
+        if self.description is None:
+            self.description = self.parser.describe + "?"
+
+        return self.description
     
+
+class ListOf(AbstractParser):
+    r"""Parser for a repetition of a subparser with open, close and separator parsers.
+
+    >>> input = lexer.Lexer(lexer.make_string_tokenizer("{hello,hello,hello}"),lexer.Literal("hello_lit", "hello"),lexer.Char("open_curly",'{'),lexer.Char("close_curly", '}'),lexer.Char("comma",','))
+
+    >>> parser = ParsingAlgo(input)
+    >>> parser.parser = ListOf(Literal(token_type="hello_lit"), open_=Literal(token_type="open_curly"), close=Literal(token_type="close_curly"), sep=Literal(token_type="comma"))
+
+    >>> [tok.value for tok in parser.parse()]
+    ['hello', 'hello', 'hello']
+
+    """
+    def __init__(self, parser, sep=None, open_=None, close=None):
+        super().__init__()
+        self.parser = parser
+        self.description = None
+        self.open = open_
+        self.close = close
+        self.sep = sep
+
+    @property
+    def describe(self):
+        if self.description is None:
+            sep_lbl = ""
+            if self.sep is not None:
+                sep_lbl = self.sep.describe 
+            open_lbl = ""
+            if self.open is not None:
+                open_lbl = self.open.describe 
+            close_lbl = ""
+            if self.close is not None:
+                close_lbl = self.close.describe 
+            self.description = "ListOf({}{}{}{})".format(self.parser.describe,sep_lbl,open_lbl,close_lbl)
+                
+            self.description = self.parser.describe + rept_lbl
+
+        return self.description
+
+    def do_parse(self, parser):
+        raise NotImplementedError("TODO")
+        res = []
+        count = 0
+        while True:
+            
+            parsed = self.parser.parse(parser)
+            if is_parse_error(parsed):
+                if count < self.min_count:
+                    return parsed
+                else:
+                    return res
+                
+            # not a parse error
+            if parsed is not None:
+                res.append(parsed)
+                count += 1
+                if count == self.max_count:
+                    return res
+                    
 class Choice(AbstractParser):
     r"""Parser for a choice of subparsers.
 

@@ -140,6 +140,7 @@ class Regexp(Recognizer):
         import re
         self.re_str = regexp
         self.regexp = re.compile(regexp, re_flags)
+        self.excludes = set()
 
     def recognize(self, tokenizer):
         start_pos = tokenizer.pos
@@ -148,6 +149,10 @@ class Regexp(Recognizer):
             return None
         match = self.regexp.match(line)
         if match is not None:
+            for exclude in self.exludes:
+                if match.group(0) == exclude:
+                    return None
+                
             tokenizer.forward(len(match.group(0)))
             return Token(self.token_type, match, start_pos, tokenizer.pos)
         else:
