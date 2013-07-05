@@ -32,6 +32,9 @@ class Token:
         self.start_pos = start_pos
         self.end_pos = end_pos
 
+    def __str__(self):
+        return "{}::{}".format(self.value, self.type)
+
     def __repr__(self):
         return "Token({0}, {1}, start_pos={2}, end_pos={3})"\
             .format(self.type, self.value,
@@ -61,7 +64,11 @@ class Char(Recognizer):
             return None
 
         def __repr__(self):
-            return "'{0}'".format(self.char)
+            return "Char(token_type={},char={})".format(self.token_type, repr(self.char))
+
+        def __str__(self):
+            return "'{}'::{}".format(self.char, self.token_type)
+
 
 class CharIn(Recognizer):
     def __init__(self, token_type, *args):
@@ -79,8 +86,11 @@ class CharIn(Recognizer):
         else:
             return None
 
+    def __str__(self):
+        return "[{}]::{}".format("".join(self.charset),self.token_type)
+
     def __repr__(self):
-        return 'CharIn{0}'.repr(self.charset)
+        return "CharIn(token_type={},charset={})".format(self.token_type, repr(self.charset))
 
 class CharNotIn(Recognizer):
     def __init__(self, token_type, *args):
@@ -98,8 +108,11 @@ class CharNotIn(Recognizer):
         else:
             return None
 
+    def __str__(self):
+        return "[^{}]::{}".format("".join(self.charset),self.token_type)
+        
     def __repr__(self):
-        return 'CharNotIn{0}'.repr(self.charset)
+        return "CharNotIn(token_type={},charset={})".format(self.token_type, repr(self.charset))
 
 class Literal(Recognizer):
     def __init__(self, token_type, literal):
@@ -115,10 +128,17 @@ class Literal(Recognizer):
         else:
             return None
 
+    def __repr__(self):
+        return "Literal(token_type={},literal={})".format(self.token_type, repr(self.literal))
+
+    def __str__(self):
+        return "'{}'::{}".format(self.literal, self.token_type)
+
 class Regexp(Recognizer):
     def __init__(self, token_type, regexp, re_flags=0):
         super().__init__(token_type)
         import re
+        self.re_str = regexp
         self.regexp = re.compile(regexp, re_flags)
 
     def recognize(self, tokenizer):
@@ -133,6 +153,13 @@ class Regexp(Recognizer):
         else:
             return None
 
+    def __repr__(self):
+        return "Regexp(token_type={},regexp={})".format(self.token_type, self.re_str)
+
+    def __str__(self):
+        return '"{}"::{}'.format(self.re_str, self.token_type)
+
+        
 class Tokenizer:
     '''
     The main tokenizer class that transforms a flow
@@ -172,6 +199,9 @@ class Tokenizer:
 
     def show_lines(self, nb_lines, cursor="_"):
         return self.tokenizer_backend.show_lines(nb_lines, cursor)
+
+    def __str__(self):
+        return self.show_lines(2)
 
 class TokenError(Exception):
     pass
@@ -294,7 +324,7 @@ class StringTokenizer(TokenizerBackend):
         while offset < self.input_length:
             ch = self.input_string[offset]
             if ch == '\n':
-                return line
+                return line + ch
             else:
                 line += ch
                 offset += 1
@@ -386,7 +416,7 @@ class Lexer:
     '''
     def __init__(self, tokenizer, *recognizers):
         self.tokenizer = tokenizer
-        self.recognizers = [ r for r in recognizers ]
+        self.recognizers = { r.token_type : r for r in recognizers }
 
     @property
     def pos(self):
@@ -398,13 +428,16 @@ class Lexer:
     def show_lines(self, nb_lines, cursor="_"):
         return self.tokenizer.show_lines(nb_lines, cursor)
 
-    def __next__(self):
-        for rec in self.recognizers:
-            token = rec.recognize(self.tokenizer)
-            if token is not None:
-                return token
-        return None
+    def next_token(self, token_type):
+        assert token_type is not None
+        assert token_type in self.recognizers
+        
+        rec = self.recognizers[token_type]
 
+        token = rec.recognize(self.tokenizer)
+
+        return token
+        
     def putback(self, token):
         """Put back a token in the lexer.
         Warning: this does not check the token was the correct

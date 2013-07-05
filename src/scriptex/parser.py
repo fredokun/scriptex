@@ -24,7 +24,7 @@ class ScripTexParser:
         self.recognizers[rec.token_type] = rec
 
     def build_lexers(self):
-        self._register_recognizer(lexer.Regexp("line_comment", r"%(\.)*$"))
+        self._register_recognizer(lexer.Regexp("line_comment", r"%(.)*$"))
         self._register_recognizer(lexer.Regexp("end_of_line", r'[\n\r]'))
         self._register_recognizer(lexer.Regexp("space", r'[ \t\f\v]'))
         self._register_recognizer(lexer.Regexp("spaces", r'[ \t\f\v]+'))
@@ -36,7 +36,7 @@ class ScripTexParser:
 
     def build_parsers(self):
         line_comment = Literal("line_comment")
-        line_comment.on_parse = lambda _,tok : markup.LineComment(tok.value[1:], tok.start_pos, tok.end_pos)
+        line_comment.on_parse = lambda _,tok : markup.LineComment(tok.value.group(0)[1:], tok.start_pos, tok.end_pos)
         newline = Literal("end_of_line")
         newline.skip = True
         spaces = Literal("spaces")
@@ -51,10 +51,12 @@ class ScripTexParser:
     def parse_from_string(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
         recs = [rec for _,rec in self.recognizers.items()]
-        print("recs = {}".format(recs))
+        # print("recs = {}".format([str(r) for r in recs]))
         lex = lexer.Lexer(tokens, *recs)
         parser = ParsingAlgo(lex)
         parser.parser = self.main_parser
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
         return parser.parse()
 

@@ -21,8 +21,8 @@ class ParsingAlgo:
     def parser(self, p):
         self._parser = p
     
-    def next_token(self):
-        return next(self.lexer)
+    def next_token(self, token_type):
+        return self.lexer.next_token(token_type)
 
     def putback_token(self, token):
         self.lexer.putback(token)
@@ -101,8 +101,9 @@ class Literal(AbstractParser):
         return ret
 
     def do_parse(self, parser):
-        #import pdb ; pdb.set_trace()
-        token = parser.next_token()
+        # BREAKPOINT >>> #  import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+            
+        token = parser.next_token(self.token_type)
         if token is None:
             return ParseError("Cannot parse literal {}: no further token".format(self.describe), parser.pos) 
         if (self.token_type is not None) and (token.type != self.token_type):
@@ -200,23 +201,23 @@ class Repeat(AbstractParser):
         return self.description
 
     def do_parse(self, parser):
-        # BREAKPOINT >>> #import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         res = []
         count = 0
         while True:
-          parsed = self.parser.parse(parser)
-          if is_parse_error(parsed):
-            if count < self.min_count:
-              return parsed
-            else:
-              return res
-
-          # not a parse error
-          if parsed is not None:
-              res.append(parsed)
-          count += 1
-          if count == self.max_count:
-            return res
+            
+            parsed = self.parser.parse(parser)
+            if is_parse_error(parsed):
+                if count < self.min_count:
+                    return parsed
+                else:
+                    return res
+                
+            # not a parse error
+            if parsed is not None:
+                res.append(parsed)
+                count += 1
+                if count == self.max_count:
+                    return res
     
 class Choice(AbstractParser):
     r"""Parser for a choice of subparsers.

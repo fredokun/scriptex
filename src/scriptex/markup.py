@@ -3,9 +3,14 @@
 The basic ScripTex markup language
 '''
 
+if __name__ == "__main__":
+    import sys
+    sys.path.append("../")
+
+
 class AbstractMarkup:
     """Abstract representation of markup objects.
-
+        
     A markup object is roughly like a function that takes
     a text to parse, detects a given markup in the input,
     and produces some output and/or effects based on the parsed
@@ -17,52 +22,47 @@ class AbstractMarkup:
     Internally, a markup embeds a parser and an abstract syntax
     tree builder.
     """
-    def __init__(self, markup_type):
+    def __init__(self, markup_type, start_pos, end_pos):
         self.markup_type = markup_type
+        self.start_pos = start_pos
+        self.end_pos = end_pos
 
 class AbstractElement(AbstractMarkup):
     """The base abstract class for element markups.
-
+    
     Element markup objects cannot nest.
     """
-    def __init__(self, markup_type):
-        super().__init__(markup_type)
+    def __init__(self, markup_type, start_pos, end_pos):
+        super().__init__(markup_type, start_pos, end_pos)
 
 class AbstractStructure(AbstractMarkup):
     """The base abstract class for structure markups.
 
     Structure markup objects can (and most often do) nest.
     """
-    def __init__(self, markup_type):
-        super().__init__(markup_type)
+    def __init__(self, markup_type, start_pos, end_pos):
+        super().__init__(markup_type, start_pos, end_pos)
 
 #------------------------------------------------------------------------------#
 #   Documents                                                                  #
 #------------------------------------------------------------------------------#
 
-def BASE_DOCUMENT_TOKENIZERS():
-    tks = [ lexer.CharIn("space-or-newline", ' ', '\t', '\r', '\n'),
-            lexer.CharIn("space-not-newline", ' ', '\t'),
-            lexer.CharIn("newline-only", '\n')
-            ]
-
 class BaseDocument(AbstractStructure):
-    def __init__(self):
-        super().__init__("document")
-        self.tokenizers = BASE_DOCUMENT_TOKENIZERS()
+    def __init__(self, start_pos, end_pos):
+        super().__init__("document", start_pos, end_pos)
         
 #------------------------------------------------------------------------------#
 #   Comments                                                                   #
 #------------------------------------------------------------------------------#
 
 class LineComment(AbstractElement):
-    def __init__(self):
-        super().__init__("line_comment")
-        self.tokenizers = [ lexer.Regexp('line-comment', '%.*') ]
-        self.parser = parser.Literal(token_type='line-comment')    
+    def __init__(self, comment, start_pos, end_pos):
+        super().__init__("line_comment", start_pos, end_pos)
+        self.comment = comment
+        
+    def __str__(self):
+        return "LineComment({},start={},end={})".format(self.comment, self.start_pos, self.end_pos)
 
-    def on_parse(self, translator, parsed):
-        pass
 
 class NestComment(AbstractStructure):
     """Representation of nested comments.

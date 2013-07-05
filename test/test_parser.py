@@ -21,7 +21,7 @@ class TestLexerString(unittest.TestCase):
 
 """)
 
-        print("ret = " + str(ret))
+        print("ret = " + str([str(p) for p in ret]))
 
 if __name__ == '__main__':
     unittest.main()
