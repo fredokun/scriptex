@@ -101,7 +101,6 @@ class Literal(AbstractParser):
         return ret
 
     def do_parse(self, parser):
-        # BREAKPOINT >>> #  import pdb; pdb.set_trace()  # <<< BREAKPOINT #
             
         token = parser.next_token(self.token_type)
         if token is None:
@@ -151,6 +150,8 @@ class Tuple(AbstractParser):
         return self.description
     
     def do_parse(self, parser):
+        # BREAKPOINT >>> #  import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
         res = []
         for p in self.parsers:
             parsed = p.parse(parser)
@@ -266,8 +267,6 @@ class ListOf(AbstractParser):
             if self.close is not None:
                 close_lbl = self.close.describe 
             self.description = "ListOf({}{}{}{})".format(self.parser.describe,sep_lbl,open_lbl,close_lbl)
-                
-            self.description = self.parser.describe + rept_lbl
 
         return self.description
 
@@ -277,7 +276,7 @@ class ListOf(AbstractParser):
         # parse open
         if self.open is not None:
             parsed = self.open.parse(parser)
-            if is_parser_error(parsed):
+            if is_parse_error(parsed):
                 return parsed
             if parsed is not None:
                 res.append(parsed)
@@ -304,7 +303,7 @@ class ListOf(AbstractParser):
             # parse separator
             if self.sep is not None:
                 parsed = self.sep.parse(parser)
-                if is_parser_error(parsed):
+                if is_parse_error(parsed):
                     if count < self.min_count:
                         return parsed
                     else:

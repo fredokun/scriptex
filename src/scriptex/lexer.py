@@ -143,13 +143,14 @@ class Regexp(Recognizer):
         self.excludes = set()
 
     def recognize(self, tokenizer):
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         start_pos = tokenizer.pos
         line = tokenizer.peek_line
         if line == None:
             return None
         match = self.regexp.match(line)
         if match is not None:
-            for exclude in self.exludes:
+            for exclude in self.excludes:
                 if match.group(0) == exclude:
                     return None
                 
@@ -435,7 +436,7 @@ class Lexer:
 
     def next_token(self, token_type):
         assert token_type is not None
-        assert token_type in self.recognizers
+        assert token_type in self.recognizers, "Token type '{}' not recognized".format(token_type)
         
         rec = self.recognizers[token_type]
 

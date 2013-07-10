@@ -9,7 +9,9 @@ if __name__ == "__main__":
     sys.path.append("../")
 
 import scriptex.lexer as lexer
-from scriptex.parselib import AbstractParser, Choice, Repeat, Literal, ParsingAlgo
+from scriptex.parselib \
+   import AbstractParser, Choice, Repeat, Tuple, \
+          Optional, ListOf, Literal, ParsingAlgo
 import scriptex.markup as markup
 
 class ScripTexParser:
@@ -30,10 +32,13 @@ class ScripTexParser:
         self._register_recognizer(lexer.Regexp("spaces", r'[ \t\f\v]+'))
         self._register_recognizer(lexer.Char("open_curly", '{'))
         self._register_recognizer(lexer.Char("close_curly", '}'))
+        self._register_recognizer(lexer.Char("open_square", '['))
+        self._register_recognizer(lexer.Char("close_square", ']'))
+        self._register_recognizer(lexer.Char("comma", ','))
 
-        ident_re = "[a-zA-Z_][a-zA-Z_0-9]*"
+        ident_re = r"[a-zA-Z_][a-zA-Z_0-9]*"
         
-        cmd_ident = lexer.Regexp("command_ident", "\\" + ident_re)
+        cmd_ident = lexer.Regexp("command_ident", r"\\" + ident_re)
         cmd_ident.excludes = { r"\begin", r"\end" }
         self._register_recognizer(cmd_ident)
 
@@ -54,14 +59,20 @@ class ScripTexParser:
             return "<{}>".format(self.name)
 
         def do_parse(self, parser):
-            if self.name not in self.parsers:
+            if self.name not in self.parser.parsers:
                 raise ValueError("No such parser: {}".format(self.name))
 
-            return self.parsers[self.name].parse(parser)
+            return self.parser.parsers[self.name].parse(parser)
         
 
     def ref(self, name):
-        self.parsers[name] = ScripTexParser._RefParser(self, name)
+        if name in self.parsers:
+            return self.parsers[name]
+        
+        parser =  ScripTexParser._RefParser(self, name)
+        self.parsers[name] = parser
+        return parser
+        
 
     def build_parsers(self):
         line_comment = Literal("line_comment")
@@ -80,8 +91,8 @@ class ScripTexParser:
         cmdhead = Literal("command_ident")
         keyval = Literal("keyval")
         
-        cmdargs = Optional(ListOf(Literal("keyval"),sep=Literal("comma")))
-        cmdbody = Optional(Tuple(Literal("open_curly"), ref("elements"), Literal("close_curly")))
+        cmdargs = Optional(ListOf(keyval,open_=Literal("open_square"),sep=Literal("comma"), close=Literal("close_square")))
+        cmdbody = Optional(Tuple(Literal("open_curly"), self.ref("elements"), Literal("close_curly")))
 
         cmd = Tuple(cmdhead, cmdargs, cmdbody)
         
