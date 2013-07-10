@@ -136,8 +136,8 @@ class Text(AbstractElement):
     """Representation of a textual element: character, word, etc.
     In ScripTex the content of a textual element must be encoded in UTF-8.
     """
-    def __init__(self, start_pos, end_pos, content):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, content, start_pos, end_pos):
+        super().__init__("text", start_pos, end_pos)
         self._content = content
 
     @property
@@ -147,6 +147,38 @@ class Text(AbstractElement):
     def __repr__(self):
         return "Text({})".format(self.content)
 
+
+#------------------------------------------------------------------------------#
+#   (unprocessed) Commands                                                     #
+#------------------------------------------------------------------------------#
+
+class Command(AbstractElement):
+    """Representation of commands.
+    """
+    def __init__(self, cmd, args, body, start_pos, end_pos):
+        super().__init__("command", start_pos, end_pos)
+        self.cmd = cmd
+        self.args = {}
+        for arg in args:
+            key = arg.value.group(1)
+            val = arg.value.group(2)
+            self.args[key] = Command.Arg(self, key,val, arg.start_pos, arg.end_pos)
+        self.body = body
+        
+    class Arg:
+        def __init__(self, cmd, key, val, start_pos, end_pos):
+            self.cmd = cmd
+            self.key = key
+            self.val = val
+            self.start_pos = start_pos
+            self.end_pos = end_pos
+
+        def __str__(self):
+            return "{}={}".format(self.key, self.val)
+
+    def __repr__(self):
+        return "Command(cmd=\"{}\",args={},body={})".format(self.cmd, self.args, self.body)
+        
 #------------------------------------------------------------------------------#
 #   Math elements                                                              #
 #------------------------------------------------------------------------------#

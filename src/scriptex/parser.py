@@ -42,7 +42,7 @@ class ScripTexParser:
         cmd_ident.excludes = { r"\begin", r"\end" }
         self._register_recognizer(cmd_ident)
 
-        self._register_recognizer(lexer.Regexp("keyval", ident_re + r"(=[^,\]]+)?"))
+        self._register_recognizer(lexer.Regexp("keyval", "(" + ident_re + r")(=[^,\]=]+)?"))
 
         # the text recognizer comes last
         self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]\(\)]+"))
@@ -99,8 +99,10 @@ class ScripTexParser:
         cmdbody = Optional(Tuple(Literal("open_curly"), self.ref("elements"), Literal("close_curly")))
 
         cmd = Tuple(cmdhead, cmdargs, cmdbody)
+        cmd.on_parse = lambda _,tok : command_on_parse(tok)
 
         text = Literal("text")
+        text.on_parse = lambda _,tok: markup.Text(tok.value.group(0), tok.start_pos, tok.end_pos)
         
         element = Choice(cmd,
                          line_comment,
@@ -130,6 +132,12 @@ class ScripTexParser:
         pass
         
 
+def command_on_parse(parsed):
+    cmd = parsed[0].value.group(0)
+    keyvals = [ tok for tok in parsed[1] if tok.type == "keyval"]
+    body = parsed[2][1]
+    return markup.Command(cmd, keyvals, body, parsed[0].start_pos, parsed[2][2].end_pos)
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod(verbose=False)
