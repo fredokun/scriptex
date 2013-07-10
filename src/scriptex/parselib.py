@@ -221,7 +221,7 @@ class Repeat(AbstractParser):
 
 class Optional(Repeat):
     def __init__(self, parser):
-        super().__init__(parser, min_count=0, max_count=0)
+        super().__init__(parser, min_count=0, max_count=1)
 
     @property
     def describe(self):
@@ -243,13 +243,15 @@ class ListOf(AbstractParser):
     ['hello', 'hello', 'hello']
 
     """
-    def __init__(self, parser, sep=None, open_=None, close=None):
+    def __init__(self, parser, sep=None, open_=None, close=None, min_count=0, max_count=-1):
         super().__init__()
         self.parser = parser
         self.description = None
         self.open = open_
         self.close = close
         self.sep = sep
+        self.min_count = min_count
+        self.max_count = max_count
 
     @property
     def describe(self):
@@ -270,8 +272,18 @@ class ListOf(AbstractParser):
         return self.description
 
     def do_parse(self, parser):
-        raise NotImplementedError("TODO")
         res = []
+
+        # parse open
+        if self.open is not None:
+            parsed = self.open.parse(parser)
+            if is_parser_error(parsed):
+                return parsed
+            if parsed is not None:
+                res.append(parsed)
+
+        # parse elements
+         
         count = 0
         while True:
             
@@ -280,14 +292,36 @@ class ListOf(AbstractParser):
                 if count < self.min_count:
                     return parsed
                 else:
-                    return res
+                    break # exit from loop
                 
             # not a parse error
             if parsed is not None:
                 res.append(parsed)
                 count += 1
                 if count == self.max_count:
-                    return res
+                    break # exit from loop
+
+            # parse separator
+            if self.sep is not None:
+                parsed = self.sep.parse(parser)
+                if is_parser_error(parsed):
+                    if count < self.min_count:
+                        return parsed
+                    else:
+                        break # exit from loop
+
+        # end of while
+
+        # parse close
+        if self.close is not None:
+            parsed = self.close.parse(parser)
+            if is_parse_error(parsed):
+                return parsed
+            else:
+                if parsed is not None:
+                    res.append(parsed)
+
+        return res
                     
 class Choice(AbstractParser):
     r"""Parser for a choice of subparsers.
