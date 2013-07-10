@@ -43,6 +43,10 @@ class ScripTexParser:
         self._register_recognizer(cmd_ident)
 
         self._register_recognizer(lexer.Regexp("keyval", ident_re + r"(=[^,\]]+)?"))
+
+        # the text recognizer comes last
+        self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]\(\)]+"))
+
         
     def _register_parser(self, name, parser):
         self.parsers[name] = parser
@@ -95,11 +99,14 @@ class ScripTexParser:
         cmdbody = Optional(Tuple(Literal("open_curly"), self.ref("elements"), Literal("close_curly")))
 
         cmd = Tuple(cmdhead, cmdargs, cmdbody)
+
+        text = Literal("text")
         
         element = Choice(cmd,
                          line_comment,
                          newline,
-                         spaces)
+                         spaces,
+                         text)
 
         elements = Repeat(element)
 

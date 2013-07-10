@@ -150,8 +150,7 @@ class Tuple(AbstractParser):
         return self.description
     
     def do_parse(self, parser):
-        # BREAKPOINT >>> #  import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         res = []
         for p in self.parsers:
             parsed = p.parse(parser)
@@ -230,6 +229,17 @@ class Optional(Repeat):
             self.description = self.parser.describe + "?"
 
         return self.description
+
+    def do_parse(self, parser):
+
+        res = super().do_parse(parser)
+        if is_parse_error(res):
+            return res
+        else:
+            try:
+                return res[0]
+            except IndexError:
+                return None 
     
 
 class ListOf(AbstractParser):
