@@ -452,6 +452,9 @@ class Lexer:
         """
         self.tokenizer.set_pos(token.start_pos)
 
+    def move_to(self, pos):
+        self.tokenizer.set_pos(pos)
+
     def __iter__(self):
         return (self)
             

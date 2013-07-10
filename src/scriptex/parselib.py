@@ -47,7 +47,7 @@ def is_parse_error(value):
 class AbstractParser:
     def __init__(self):
         # by default the parsed content is not transformed
-        self.on_parse = lambda parser, content: content
+        self.on_parse = lambda parser, result, start_pos, end_pos: result
         self.on_error = lambda parser, err: err
 
         # by default the parser is *not* skip
@@ -60,11 +60,13 @@ class AbstractParser:
         raise NotImplementedError("Abstract method")
 
     def parse(self, parser):
+        start_pos = parser.lexer.pos
         result = self.do_parse(parser)
+        end_pos = parser.lexer.pos
         if is_parse_error(result):
             return self.on_error(parser, result)
         else:
-            return self.on_parse(parser, result)
+            return self.on_parse(parser, result, start_pos, end_pos)
 
 class Literal(AbstractParser):
     r"""Parser for a literal token.
@@ -376,9 +378,13 @@ class Choice(AbstractParser):
         start_pos = parser.pos
         parsed = None
         for p in self.parsers:
+            save_pos = parser.lexer.pos
             parsed = p.parse(parser)
             if not is_parse_error(parsed):
                 return parsed
+            else:
+                parser.lexer.move_to(save_pos)
+                
         # everything failed
         return ParseError("Cannot parse: {}".format(self.describe), start_pos, parser.pos)
 

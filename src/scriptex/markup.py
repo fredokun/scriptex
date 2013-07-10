@@ -104,9 +104,8 @@ class Section(AbstractStructure):
 
     The thid syntax is latex-inspired :   \chapter{title},  \section{title}, etc.
     """
-    def __init__(self, start_pos, end_pos, name, level, title):
-        AbstractSection.__init__(self, start_pos, end_pos)
-        self._name = name
+    def __init__(self, name, level, title, start_pos, end_pos):
+        super().__init__(name,start_pos, end_pos)
         self._level = level
         self._title = title
 
@@ -125,8 +124,13 @@ class Section(AbstractStructure):
 class Paragraph(Section):
     """Representation of paragraphs, a specific kind of section.
     """
-    def __init__(self, start_pos, end_pos, title):
-        Section.__init__(self, start_pos, end_pos, "paragraph", 0, title)
+    def __init__(self, title, header_comments, elements, start_pos, end_pos):
+        Section.__init__(self, "paragraph", 0, title, start_pos, end_pos)
+        self.header_comments = header_comments
+        self.elements = elements
+
+    def __repr__(self):
+        return "Paragraph(elements={})".format(repr(self.elements))
         
 #------------------------------------------------------------------------------#
 #   Text elements                                                              #
@@ -176,9 +180,32 @@ class Command(AbstractElement):
         def __str__(self):
             return "{}={}".format(self.key, self.val)
 
+        def __repr__(self):
+            return str(self)
+
     def __repr__(self):
-        return "Command(cmd=\"{}\",args={},body={})".format(self.cmd, self.args, self.body)
+        return "Command(cmd={},args=[{}],body={})".format(self.cmd, [ str(self.args[key]) for key in self.args], self.body)
         
+#------------------------------------------------------------------------------#
+#   (unprocessed) Environments                                                 #
+#------------------------------------------------------------------------------#
+
+class Environment(AbstractStructure):
+    """Representation of environments.
+    """
+    def __init__(self, env_name, args, components, start_pos, end_pos):
+        super().__init__("environment", start_pos, end_pos)
+        self.env_name = env_name
+        self.args = {}
+        for arg in args:
+            key = arg.value.group(1)
+            val = arg.value.group(2)
+            self.args[key] = Command.Arg(self, key,val, arg.start_pos, arg.end_pos)
+        self.components = components
+        
+    def __repr__(self):
+        return "Environment(env_name=\"{}\",args={},components={})".format(self.env_name, self.args, self.components)
+
 #------------------------------------------------------------------------------#
 #   Math elements                                                              #
 #------------------------------------------------------------------------------#
