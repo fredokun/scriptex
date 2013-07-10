@@ -160,7 +160,7 @@ class Tuple(AbstractParser):
                 return parsed  # stop in case of a parse error
             if parsed is not None:
                 res.append(parsed)
-        return res
+        return tuple(res)
 
 class Repeat(AbstractParser):
     r"""Parser for a repetition of a subparser.
@@ -371,7 +371,7 @@ class Choice(AbstractParser):
     @property
     def describe(self):
         if self.description is None:
-            self.description = " / ".join(p.describe for p in self.parsers)
+            self.description = " / ".join("({})".format(p.describe) for p in self.parsers)
         return self.description
 
     def do_parse(self,parser):
