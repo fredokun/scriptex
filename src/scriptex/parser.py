@@ -168,7 +168,9 @@ class ScripTexParser:
         return parser.parse()
 
     def parse_from_file(self, filename):
-        pass
+        file = open(filename, "rt")
+        input = file.read()
+        return self.parse_from_string(input)
         
 
 def command_on_parse(parsed, start_pos, end_pos):
