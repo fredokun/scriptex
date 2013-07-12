@@ -123,27 +123,19 @@ class ScripTexParser:
         env = Tuple(env_open, self.ref("components"), env_close)
         env.on_parse = lambda _,parsed,start_pos,end_pos: environment_on_parse(parsed, start_pos, end_pos) 
 
-        # a literal paragraph starts and ends with a newline
-        paragraph = Tuple(newlines,
-                          Repeat(Choice(spaces,line_comment), min_count=0),
-                          self.ref("elements"),
-                          single_newline)
-        paragraph.on_parse = lambda _,parsed,start_pos,end_pos: markup.Paragraph("",parsed[0],parsed[1],start_pos, end_pos)
-
-        # an element is a basic paragraph content
+        # paragraph elements
         first_element = Choice(cmd,text)
         element = Choice(cmd,
                          line_comment,
                          spaces,
+                         single_newline,
                          text)
 
-        elements = Tuple(first_element,Repeat(element, min_count=0))
-        elements.on_parse = lambda _,parsed,__,___: [parsed[0]] + parsed[1]
+        paragraph = Tuple(first_element,Repeat(element, min_count=0),newlines)
+        paragraph.on_parse = lambda _,parsed,start_pos,end_pos: markup.Paragraph("",[parsed[0]]+parsed[1],start_pos, end_pos)
 
-        self._register_parser("elements", elements)
-
-        component = Choice(paragraph,
-                           env,
+        component = Choice(env,
+                           paragraph,
                            line_comment,
                            newlines,
                            spaces)

@@ -124,9 +124,8 @@ class Section(AbstractStructure):
 class Paragraph(Section):
     """Representation of paragraphs, a specific kind of section.
     """
-    def __init__(self, title, header_comments, elements, start_pos, end_pos):
+    def __init__(self, title, elements, start_pos, end_pos):
         Section.__init__(self, "paragraph", 0, title, start_pos, end_pos)
-        self.header_comments = header_comments
         self.elements = elements
 
     def __repr__(self):
