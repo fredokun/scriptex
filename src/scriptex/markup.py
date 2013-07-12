@@ -47,9 +47,16 @@ class AbstractStructure(AbstractMarkup):
 #   Documents                                                                  #
 #------------------------------------------------------------------------------#
 
-class BaseDocument(AbstractStructure):
-    def __init__(self, start_pos, end_pos):
+class Document(AbstractStructure):
+    def __init__(self, body, start_pos, end_pos):
         super().__init__("document", start_pos, end_pos)
+        self.body = body
+
+    def __str__(self):
+        return "Document({})".format(self.body)
+
+    def __repr__(self):
+        return str(self)
         
 #------------------------------------------------------------------------------#
 #   Comments                                                                   #
@@ -63,6 +70,9 @@ class LineComment(AbstractElement):
     def __str__(self):
         return "LineComment({},start={},end={})".format(self.comment, self.start_pos, self.end_pos)
 
+    def __repr__(self):
+        return str(self)
+    
 
 class NestComment(AbstractStructure):
     """Representation of nested comments.

@@ -20,7 +20,7 @@ class TestLexerString(unittest.TestCase):
 
 """)
 
-        print("ret 1 = " + str([str(p) for p in ret]))
+        print("doc 1 = {}".format(ret))
 
     def test_command_simple(self):
         parser = ScripTexParser()
@@ -36,7 +36,7 @@ contents of the command
 
 """)
 
-        print("ret 2 = " + str([str(p) for p in ret]))
+        print("doc 2 = {}".format(ret))
 
 
         

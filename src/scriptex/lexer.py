@@ -180,6 +180,9 @@ class Tokenizer:
     def pos(self):
         return self.tokenizer_backend.pos()
 
+    def at_eof(self):
+        return self.tokenizer_backend.at_eof()
+
     def set_pos(self, pos):
         self.tokenizer_backend.move_to(pos.offset)
 
@@ -454,6 +457,9 @@ class Lexer:
 
     def move_to(self, pos):
         self.tokenizer.set_pos(pos)
+
+    def at_eof(self):
+        return self.tokenizer.at_eof()
 
     def __iter__(self):
         return (self)

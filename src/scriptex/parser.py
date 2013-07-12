@@ -11,7 +11,8 @@ if __name__ == "__main__":
 import scriptex.lexer as lexer
 from scriptex.parselib \
    import AbstractParser, Choice, Repeat, Tuple, \
-          Optional, ListOf, Literal, ParsingAlgo
+          Optional, ListOf, Literal, EndOfInput, Try, \
+          One, ParsingAlgo
 import scriptex.markup as markup
 
 class ScripTexParser:
@@ -49,7 +50,7 @@ class ScripTexParser:
         self._register_recognizer(lexer.Regexp("keyval", "(" + ident_re + r")(=[^,\]=]+)?"))
 
         # the text recognizer comes last
-        self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]\(\)]+"))
+        self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]\(\)%]+"))
 
         
     def _register_parser(self, name, parser):
@@ -131,7 +132,12 @@ class ScripTexParser:
                          single_newline,
                          text)
 
-        paragraph = Tuple(first_element,Repeat(element, min_count=0),newlines)
+        end_of_par = Choice(newlines,
+                            Try(Literal("close_curly")),
+                            Try(Literal("begin_env")),
+                            EndOfInput("end_of_input"))
+
+        paragraph = Tuple(first_element,Repeat(element, min_count=0),end_of_par)
         paragraph.on_parse = lambda _,parsed,start_pos,end_pos: markup.Paragraph("",[parsed[0]]+parsed[1],start_pos, end_pos)
 
         component = Choice(env,
@@ -143,8 +149,11 @@ class ScripTexParser:
         components = Repeat(component)
 
         self._register_parser("components", components)
+
+        document = One(self.ref("components"))
+        document.on_parse = lambda _,parsed,start_pos,end_pos: markup.Document(parsed, start_pos, end_pos)
         
-        self.main_parser = self.ref("components") 
+        self.main_parser = document 
 
     def parse_from_string(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))

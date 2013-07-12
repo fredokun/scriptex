@@ -128,6 +128,47 @@ class Literal(AbstractParser):
         else:
             return token
 
+class EndOfInput(AbstractParser):
+    r"""Parser for the end of input.
+    """
+    def __init__(self, token_type="end-of-input"):
+        super().__init__()
+        self.token_type = token_type
+        
+    @property
+    def describe(self):
+        return "<EndOfInput>"
+    
+    def do_parse(self, parser):
+        if parser.lexer.at_eof():
+            return lexer.Token(self.token_type, None, parser.lexer.pos, parser.lexer.pos)
+        else: 
+            return ParseError("Cannot parse {}: not at end of input".format(self.describe), parser.pos) 
+
+        if self.skip:
+            return None
+        else:
+            return token
+
+class Try(AbstractParser):
+    r"""Parser for trying a subparser (does not consume input)
+    """
+    def __init__(self, parser):
+        super().__init__()
+        self.parser = parser
+
+    @property
+    def describe(self):
+        return "Try({})".format(self.parser.describe)
+
+    def do_parse(self, parser):
+        save_pos = parser.lexer.pos
+
+        parsed = self.parser.parse(parser)
+        parser.lexer.move_to(save_pos)
+
+        return parsed
+        
 class Tuple(AbstractParser):
     r"""Parser for a tuple of subparsers.
 
@@ -152,7 +193,6 @@ class Tuple(AbstractParser):
         return self.description
     
     def do_parse(self, parser):
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         res = []
         for p in self.parsers:
             parsed = p.parse(parser)
@@ -161,6 +201,23 @@ class Tuple(AbstractParser):
             if parsed is not None:
                 res.append(parsed)
         return tuple(res)
+
+class One(Tuple):
+    r"""Parsed for a single sub-parser.
+    """
+    def __init__(self, parser):
+        super().__init__(parser)
+
+    @property
+    def describe(self):
+        return self.parsers[0].describe
+
+    def do_parse(self, parser):
+        res = super().do_parse(parser)
+        try:
+            return res[0]
+        except IndexError:
+            return res
 
 class Repeat(AbstractParser):
     r"""Parser for a repetition of a subparser.
@@ -333,7 +390,7 @@ class ListOf(AbstractParser):
                     res.append(parsed)
 
         return res
-                    
+
 class Choice(AbstractParser):
     r"""Parser for a choice of subparsers.
 
@@ -375,6 +432,8 @@ class Choice(AbstractParser):
         return self.description
 
     def do_parse(self,parser):
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
         start_pos = parser.pos
         parsed = None
         for p in self.parsers:
@@ -387,6 +446,7 @@ class Choice(AbstractParser):
                 
         # everything failed
         return ParseError("Cannot parse: {}".format(self.describe), start_pos, parser.pos)
+
 
 if __name__ == "__main__":
     import doctest
