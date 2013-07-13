@@ -124,7 +124,7 @@ class ScripTexParser:
         env_open = Tuple(Literal("begin_env"),
                          Literal("open_curly", fatal_error=True), Literal("env_ident", fatal_error=True), Literal("close_curly", fatal_error=True),
                          cmdargs)
-        env_open.on_parse = lambda _,parsed,__,___: (parsed[2], parsed[4])
+        env_open.on_parse = lambda _,parsed,__,___: (parsed[2], parsed[4] if len(parsed)==5 else None)
         env_close = Tuple(Literal("end_env"), Literal("open_curly", fatal_error=True), Literal("command_ident", fatal_error=True), Literal("close_curly", fatal_error=True))
         env = Tuple(env_open, self.ref("components"), env_close)
         env.on_parse = lambda _,parsed,start_pos,end_pos: environment_on_parse(parsed, start_pos, end_pos) 

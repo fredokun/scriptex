@@ -38,9 +38,18 @@ class ParsingAlgo:
 class ParseError:
     def __init__(self, msg, start_pos, end_pos=None, is_fatal=False):
         self.start_pos = start_pos
-        self.end_pos = end_pos
+        if end_pos is None:
+            self.end_pos = start_pos
+        else:
+            self.end_pos = end_pos
         self.msg = msg
         self.is_fatal = is_fatal
+
+    def __str__(self):
+        return "ParseError at line {} char {} (until line {} char {}):\n  ==> {} {}".format(self.start_pos.lpos, self.start_pos.cpos, self.end_pos.lpos, self.end_pos.cpos, self.msg, "(fatal)" if self.is_fatal else "")
+
+    def __repr__(self):
+        return "<{}>".format(str(self))
 
 def is_parse_error(value):
     return isinstance(value, ParseError)
@@ -213,6 +222,8 @@ class One(Tuple):
 
     def do_parse(self, parser):
         res = super().do_parse(parser)
+        if is_parse_error(res):
+            return res
         try:
             return res[0]
         except IndexError:
