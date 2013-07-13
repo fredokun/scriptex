@@ -41,7 +41,8 @@ contents of the command
     def test_env_simple(self):
         parser = ScripTexParser()
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        # BREAKPOINT >>> #
+        import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = parser.parse_from_string(r"""
 % a comment before the environment
 \begin{env}
