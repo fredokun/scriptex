@@ -110,7 +110,7 @@ class ScripTexParser:
         cmdhead = Literal("command_ident")
         keyval = Literal("keyval", fatal_error=True)
         
-        cmdargs = Optional(ListOf(keyval,open_=Literal("open_square"),sep=Literal("comma", fatal_error=True), close=Literal("close_square", fatal_error=True)))
+        cmdargs = Optional(ListOf(keyval,open_=Literal("open_square"),sep=Literal("comma"), close=Literal("close_square", fatal_error=True)))
         cmdbody = Optional(Tuple(Literal("open_curly"), self.ref("components"), Literal("close_curly")))
 
         cmd = Tuple(cmdhead, cmdargs, cmdbody)
@@ -140,6 +140,7 @@ class ScripTexParser:
         end_of_par = Choice(newlines,
                             Try(Literal("close_curly")),
                             Try(Literal("begin_env")),
+                            Try(Literal("end_env")),
                             EndOfInput("end_of_input"))
 
         paragraph = Tuple(first_element,Repeat(element, min_count=0),end_of_par)
@@ -192,15 +193,15 @@ def command_on_parse(parsed, start_pos, end_pos):
     return markup.Command(cmd, keyvals, body, start_pos, end_pos)
 
 def environment_on_parse(parsed, start_pos, end_pos):
-    # BREAKPOINT >>> #
-    import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+    # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
     env_name = parsed[0][0].value.group(0)
-    keyvals = [ tok for tok in parsed[0][1] if tok.type == "keyval"]
+    keyvals = []
+    if parsed[0][1] is not None:
+        keyvals = [ tok for tok in parsed[0][1] if tok.type == "keyval"]
     components = parsed[1]
     return markup.Environment(env_name, keyvals, components, start_pos, end_pos)
 
-    
 if __name__ == "__main__":
     import doctest
     doctest.testmod(verbose=False)
