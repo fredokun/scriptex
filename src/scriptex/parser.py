@@ -47,6 +47,9 @@ class ScripTexParser:
         cmd_ident.excludes = { r"\begin", r"\end" }
         self._register_recognizer(cmd_ident)
 
+        env_ident = lexer.Regexp("env_ident", ident_re)
+        self._register_recognizer(env_ident)
+
         self._register_recognizer(lexer.Regexp("keyval", "(" + ident_re + r")(=[^,\]=]+)?"))
 
         # the text recognizer comes last
@@ -119,7 +122,7 @@ class ScripTexParser:
         # \end{env}
 
         env_open = Tuple(Literal("begin_env"),
-                         Literal("open_curly", fatal_error=True), Literal("command_ident", fatal_error=True), Literal("close_curly", fatal_error=True),
+                         Literal("open_curly", fatal_error=True), Literal("env_ident", fatal_error=True), Literal("close_curly", fatal_error=True),
                          cmdargs)
         env_open.on_parse = lambda _,parsed,__,___: (parsed[2], parsed[4])
         env_close = Tuple(Literal("end_env"), Literal("open_curly", fatal_error=True), Literal("command_ident", fatal_error=True), Literal("close_curly", fatal_error=True))
@@ -170,8 +173,9 @@ class ScripTexParser:
     def parse_from_file(self, filename):
         file = open(filename, "rt")
         input = file.read()
-        return self.parse_from_string(input)
-        
+        ret = self.parse_from_string(input)
+        file.close()
+        return ret
 
 def command_on_parse(parsed, start_pos, end_pos):
     cmd = parsed[0].value.group(0)
