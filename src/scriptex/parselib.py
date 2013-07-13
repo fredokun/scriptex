@@ -36,22 +36,26 @@ class ParsingAlgo:
 
 
 class ParseError:
-    def __init__(self, msg, start_pos, end_pos=None):
+    def __init__(self, msg, start_pos, end_pos=None, is_fatal=False):
         self.start_pos = start_pos
         self.end_pos = end_pos
         self.msg = msg
+        self.is_fatal = is_fatal
 
 def is_parse_error(value):
     return isinstance(value, ParseError)
     
 class AbstractParser:
-    def __init__(self):
+    def __init__(self, skip=False, fatal_error=False):
         # by default the parsed content is not transformed
         self.on_parse = lambda parser, result, start_pos, end_pos: result
         self.on_error = lambda parser, err: err
 
-        # by default the parser is *not* skip
-        self.skip = False
+        # by default the parser should *not* skip
+        self.skip = skip
+
+        # by default the parser should not generate fatal errors
+        self.fatal_error = fatal_error
 
     def describe(self):
         raise NotImplementedError("Abstract method")
@@ -66,7 +70,10 @@ class AbstractParser:
         if is_parse_error(result):
             return self.on_error(parser, result)
         else:
-            return self.on_parse(parser, result, start_pos, end_pos)
+            if self.skip:
+                return self.on_parse(parser, None, start_pos, end_pos)
+            else:
+                return self.on_parse(parser, result, start_pos, end_pos)
 
 class Literal(AbstractParser):
     r"""Parser for a literal token.
@@ -86,8 +93,8 @@ class Literal(AbstractParser):
     "Cannot parse literal 'hello': expect value 'hello', got '{'"
 
     """
-    def __init__(self, token_type=None, literal=None):
-        super().__init__()
+    def __init__(self, token_type=None, literal=None, skip=False, fatal_error=False):
+        super().__init__(skip, fatal_error)
         self.literal = literal
         self.token_type = token_type
 
@@ -106,14 +113,14 @@ class Literal(AbstractParser):
             
         token = parser.next_token(self.token_type)
         if token is None:
-            return ParseError("Cannot parse literal {}: no further token".format(self.describe), parser.pos) 
+            return ParseError("Cannot parse literal {}: mismatch token".format(self.describe), parser.pos, is_fatal=self.fatal_error) 
         if (self.token_type is not None) and (token.type != self.token_type):
             parser.putback_token(token)
             return ParseError("Cannot parse literal {0}: "\
                               "expect token type '{1}', got '{2}'".format(self.describe,
                                                                           self.token_type,
                                                                           token.type),
-                              token.start_pos, token.end_pos)
+                              token.start_pos, token.end_pos, is_fatal=self.fatal_error)
 
         if (self.literal is not None) and (token.value != self.literal):
             parser.putback_token(token)
@@ -121,17 +128,14 @@ class Literal(AbstractParser):
                               "expect value '{1}', got '{2}'".format(self.describe,
                                                                      self.literal,
                                                                      token.value),
-                              token.start_pos, token.end_pos)
+                              token.start_pos, token.end_pos, is_fatal=self.fatal_error)
 
-        if self.skip:
-            return None
-        else:
-            return token
+        return token
 
 class EndOfInput(AbstractParser):
     r"""Parser for the end of input.
     """
-    def __init__(self, token_type="end-of-input"):
+    def __init__(self, token_type="end-of-input", skip=False, fatal_error=False):
         super().__init__()
         self.token_type = token_type
         
@@ -143,18 +147,13 @@ class EndOfInput(AbstractParser):
         if parser.lexer.at_eof():
             return lexer.Token(self.token_type, None, parser.lexer.pos, parser.lexer.pos)
         else: 
-            return ParseError("Cannot parse {}: not at end of input".format(self.describe), parser.pos) 
-
-        if self.skip:
-            return None
-        else:
-            return token
+            return ParseError("Cannot parse {}: not at end of input".format(self.describe), parser.pos, is_fatal=self.fatal_error) 
 
 class Try(AbstractParser):
     r"""Parser for trying a subparser (does not consume input)
     """
-    def __init__(self, parser):
-        super().__init__()
+    def __init__(self, parser, skip=False):
+        super().__init__(skip)
         self.parser = parser
 
     @property
@@ -442,10 +441,13 @@ class Choice(AbstractParser):
             if not is_parse_error(parsed):
                 return parsed
             else:
-                parser.lexer.move_to(save_pos)
+                if parsed.is_fatal:
+                    return parsed  # fatal error
+                else: # otherwise, try next
+                    parser.lexer.move_to(save_pos)
                 
         # everything failed
-        return ParseError("Cannot parse: {}".format(self.describe), start_pos, parser.pos)
+        return ParseError("Cannot parse: {}".format(self.describe), start_pos, parser.pos, is_fatal=self.fatal_error)
 
 
 if __name__ == "__main__":

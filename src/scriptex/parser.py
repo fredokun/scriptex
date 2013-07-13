@@ -105,9 +105,9 @@ class ScripTexParser:
         #  \cmd[key1=val1,...,keyN=valN]{<body>}
 
         cmdhead = Literal("command_ident")
-        keyval = Literal("keyval")
+        keyval = Literal("keyval", fatal_error=True)
         
-        cmdargs = Optional(ListOf(keyval,open_=Literal("open_square"),sep=Literal("comma"), close=Literal("close_square")))
+        cmdargs = Optional(ListOf(keyval,open_=Literal("open_square"),sep=Literal("comma", fatal_error=True), close=Literal("close_square", fatal_error=True)))
         cmdbody = Optional(Tuple(Literal("open_curly"), self.ref("components"), Literal("close_curly")))
 
         cmd = Tuple(cmdhead, cmdargs, cmdbody)
@@ -118,9 +118,11 @@ class ScripTexParser:
         # <body>
         # \end{env}
 
-        env_open = Tuple(Literal("begin_env"), Literal("open_curly"), Literal("command_ident"), Literal("close_curly"), cmdargs)
+        env_open = Tuple(Literal("begin_env"),
+                         Literal("open_curly", fatal_error=True), Literal("command_ident", fatal_error=True), Literal("close_curly", fatal_error=True),
+                         cmdargs)
         env_open.on_parse = lambda _,parsed,__,___: (parsed[2], parsed[4])
-        env_close = Tuple(Literal("end_env"), Literal("open_curly"), Literal("command_ident"), Literal("close_curly"))
+        env_close = Tuple(Literal("end_env"), Literal("open_curly", fatal_error=True), Literal("command_ident", fatal_error=True), Literal("close_curly", fatal_error=True))
         env = Tuple(env_open, self.ref("components"), env_close)
         env.on_parse = lambda _,parsed,start_pos,end_pos: environment_on_parse(parsed, start_pos, end_pos) 
 
@@ -172,8 +174,6 @@ class ScripTexParser:
         
 
 def command_on_parse(parsed, start_pos, end_pos):
-    # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
     cmd = parsed[0].value.group(0)
     keyvals = []
     body = None
@@ -188,6 +188,9 @@ def command_on_parse(parsed, start_pos, end_pos):
     return markup.Command(cmd, keyvals, body, start_pos, end_pos)
 
 def environment_on_parse(parsed, start_pos, end_pos):
+    # BREAKPOINT >>> #
+    import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
     env_name = parsed[0][0].value.group(0)
     keyvals = [ tok for tok in parsed[0][1] if tok.type == "keyval"]
     components = parsed[1]
