@@ -118,9 +118,9 @@ class ScripTexParser:
         # <body>
         # \end{env}
 
-        env_open = Tuple(Literal("begin_env"), Literal("open-curly"), Literal("command_ident"), Literal("close-curly"), cmdargs)
+        env_open = Tuple(Literal("begin_env"), Literal("open_curly"), Literal("command_ident"), Literal("close_curly"), cmdargs)
         env_open.on_parse = lambda _,parsed,__,___: (parsed[2], parsed[4])
-        env_close = Tuple(Literal("end_env"), Literal("open-curly"), Literal("command_ident"), Literal("close-curly"))
+        env_close = Tuple(Literal("end_env"), Literal("open_curly"), Literal("command_ident"), Literal("close_curly"))
         env = Tuple(env_open, self.ref("components"), env_close)
         env.on_parse = lambda _,parsed,start_pos,end_pos: environment_on_parse(parsed, start_pos, end_pos) 
 
@@ -163,8 +163,6 @@ class ScripTexParser:
         parser = ParsingAlgo(lex)
         parser.parser = self.main_parser
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
         return parser.parse()
 
     def parse_from_file(self, filename):
@@ -174,9 +172,19 @@ class ScripTexParser:
         
 
 def command_on_parse(parsed, start_pos, end_pos):
+    # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
     cmd = parsed[0].value.group(0)
-    keyvals = [ tok for tok in parsed[1] if tok.type == "keyval"]
-    body = parsed[2][1]
+    keyvals = []
+    body = None
+    if len(parsed)>1:
+        if parsed[1][0].type == "open_square":
+            keyvals = [ tok for tok in parsed[1] if tok.type == "keyval"]
+            if len(parsed)>2:
+                body = parsed[2][1]
+        elif parsed[1][0].type == "open_curly":
+            body = parsed[1][1]
+    
     return markup.Command(cmd, keyvals, body, start_pos, end_pos)
 
 def environment_on_parse(parsed, start_pos, end_pos):

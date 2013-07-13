@@ -38,6 +38,14 @@ contents of the command
 
         print("doc 2 = {}".format(ret))
 
+    def test_basic_example(self):
+        parser = ScripTexParser()
+
+        # BREAKPOINT >>> #
+        #import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_file("../examples/basic.scrip.tex")
+
+        print(ret)
 
         
 if __name__ == '__main__':
