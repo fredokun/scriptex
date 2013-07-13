@@ -265,6 +265,8 @@ class Repeat(AbstractParser):
             
             parsed = self.parser.parse(parser)
             if is_parse_error(parsed):
+                if parsed.is_fatal:
+                    return parsed
                 if count < self.min_count:
                     return parsed
                 else:
@@ -356,6 +358,8 @@ class ListOf(AbstractParser):
             
             parsed = self.parser.parse(parser)
             if is_parse_error(parsed):
+                if parsed.is_fatal:
+                    return parsed
                 if count < self.min_count:
                     return parsed
                 else:
@@ -372,6 +376,8 @@ class ListOf(AbstractParser):
             if self.sep is not None:
                 parsed = self.sep.parse(parser)
                 if is_parse_error(parsed):
+                    if parsed.is_fatal:
+                        return parsed
                     if count < self.min_count:
                         return parsed
                     else:
