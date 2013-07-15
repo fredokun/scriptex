@@ -56,8 +56,32 @@ contents of the command
 % a last comment outside the environment
 """)
 
-        print("doc 3 = {}".format(ret))
+        #print("doc 3 = {}".format(ret))
 
+    def test_env_itemize(self):
+        parser = ScripTexParser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_string(r"""
+% a comment before the environment
+\begin{itemize}
+% this is a comment
+\item first item
+\item second item with command \mycommand[key1=value1,key2=value2]{
+contents of the command
+% a comment in the command
+}
+
+\item an item
+    % after some space
+\end{itemize}
+
+% a last comment outside the environment
+""")
+
+        print("doc 4 = {}".format(ret))
+        
+        
     def test_basic_example(self):
         parser = ScripTexParser()
 
