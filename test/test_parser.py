@@ -81,12 +81,42 @@ contents of the command
 
         print("doc 4 = {}".format(ret))
         
+
+    def test_env_itemize2(self):
+        parser = ScripTexParser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_string(r"""
+% a comment before the environment
+\begin{itemize}
+\item 1
+\item 2
+\begin{itemize}
+\item a (b)
+\item 3.2
+\end{itemize}
+\item 4
+\end{itemize}
+
+% a last comment outside the environment
+""")
+
+        print("doc 5 = {}".format(ret))
+
+    def test_parentheses(self):
+        parser = ScripTexParser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_string(r"""
+text (in parentheses)
+""")
+
+        print("doc 6 = {}".format(ret))
         
     def test_basic_example(self):
         parser = ScripTexParser()
 
-        # BREAKPOINT >>> #
-        #import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = parser.parse_from_file("../examples/basic.scrip.tex")
 
         print(ret)

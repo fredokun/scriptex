@@ -53,7 +53,7 @@ class ScripTexParser:
         self._register_recognizer(lexer.Regexp("keyval", "(" + ident_re + r")(=[^,\]=]+)?"))
 
         # the text recognizer comes last
-        self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]\(\)%]+"))
+        self._register_recognizer(lexer.Regexp("text", r"[^ \n\r\t\f\v\\{}\[\]%]+"))
 
         
     def _register_parser(self, name, parser):
