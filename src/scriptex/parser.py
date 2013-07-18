@@ -40,11 +40,17 @@ class ScripTexParser:
         self._register_recognizer(lexer.Char("comma", ','))
         self._register_recognizer(lexer.Literal("begin_env",r"\begin"))
         self._register_recognizer(lexer.Literal("end_env",r"\end"))
+        self._register_recognizer(lexer.Literal("part_sec", r"\part"))
+        self._register_recognizer(lexer.Literal("chapter_sec", r"\chapter"))
+        self._register_recognizer(lexer.Literal("section_sec", r"\section"))
+        self._register_recognizer(lexer.Literal("subsection_sec", r"\subsection"))
+        self._register_recognizer(lexer.Literal("subsubsection_sec", r"\subsubsection"))
+        self._register_recognizer(lexer.Literal("paragraph_sec", r"\paragraph"))
         
         ident_re = r"[a-zA-Z_][a-zA-Z_0-9]*"
         
         cmd_ident = lexer.Regexp("command_ident", r"\\" + ident_re)
-        cmd_ident.excludes = { r"\begin", r"\end" }
+        cmd_ident.excludes = { r"\begin", r"\end", r"\part", r"\chapter", r"\section", r"\subsection", r"\subsubsection", r"\paragraph" }
         self._register_recognizer(cmd_ident)
 
         env_ident = lexer.Regexp("env_ident", ident_re)
@@ -129,8 +135,22 @@ class ScripTexParser:
         env = Tuple(env_open, self.ref("components"), env_close)
         env.on_parse = lambda _,parsed,start_pos,end_pos: environment_on_parse(parsed, start_pos, end_pos) 
 
+        # sectioning
+        section_cmd = Choice(Literal("part_sec"),
+                             Literal("chapter_sec"),
+                             Literal("section_sec"),
+                             Literal("subsection_sec"),
+                             Literal("subsubsection_sec"))
+        
+        section = Tuple(section_cmd,
+                        Literal("open_curly", fatal_error=True),
+                        Literal("text", fatal_error=True),
+                        Literal("close_curly", fatal_error=True))
+        section.on_parse = lambda _,parsed,start_pos,end_pos: markup.Section(parsed[0], parsed[2], start_pos, end_pos) 
+                        
+        
         # paragraph elements
-        first_element = Choice(cmd,text)
+        first_element = Choice(cmd,text,Literal("paragraph_sec"))
         element = Choice(cmd,
                          line_comment,
                          spaces,
@@ -141,6 +161,8 @@ class ScripTexParser:
                             Try(Literal("close_curly")),
                             Try(Literal("begin_env")),
                             Try(Literal("end_env")),
+                            Try(Literal("paragraph_sec")),
+                            Try(section_cmd),
                             EndOfInput("end_of_input"))
 
         paragraph = Tuple(first_element,Repeat(element, min_count=0),end_of_par)

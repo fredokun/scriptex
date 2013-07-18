@@ -112,30 +112,20 @@ class Section(AbstractStructure):
     The second syntax is  \begin{section}[level=N]  \end{section}.
     User commands can be provided for default sectionning, e.g. as in latex
 
-    The thid syntax is latex-inspired :   \chapter{title},  \section{title}, etc.
+    The third syntax is latex-inspired :   \chapter{title},  \section{title}, etc.
     """
-    def __init__(self, name, level, title, start_pos, end_pos):
+    def __init__(self, name, title, start_pos, end_pos):
         super().__init__(name,start_pos, end_pos)
-        self._level = level
-        self._title = title
+        self.title = title
 
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def level(self):
-        return self._level
-
-    @property
-    def title(self):
-        return self._title
-
+    def __repr__(self):
+        return "Section({},{})".format(self.markup_type, self.title)
+        
 class Paragraph(Section):
     """Representation of paragraphs, a specific kind of section.
     """
     def __init__(self, title, elements, start_pos, end_pos):
-        Section.__init__(self, "paragraph", 0, title, start_pos, end_pos)
+        Section.__init__(self, "paragraph", title, start_pos, end_pos)
         self.elements = elements
 
     def __repr__(self):
