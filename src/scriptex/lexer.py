@@ -27,7 +27,7 @@ class Token:
     Representation of lexer tokens.
     '''
     def __init__(self, token_type, token_value, start_pos, end_pos):
-        self.type = token_type
+        self.token_type = token_type
         self.value = token_value
         self.start_pos = start_pos
         self.end_pos = end_pos
@@ -37,7 +37,7 @@ class Token:
 
     def __repr__(self):
         return "Token({0}, {1}, start_pos={2}, end_pos={3})"\
-            .format(self.type, self.value,
+            .format(self.token_type, self.value,
                     self.start_pos, self.end_pos)
 
 class Recognizer:
@@ -46,6 +46,22 @@ class Recognizer:
         
     def recognize(self, tokenizer):
         raise NotImplementedError("Abstract method")
+
+class EndOfInput(Recognizer):
+    def __init__(self, token_type="end_of_input"):
+        super().__init__(token_type)
+
+    def recognize(self, tokenizer):
+        if tokenizer.at_eof():
+            return Token(self.token_type, None, tokenizer.pos, tokenizer.pos)
+        else:
+            return None
+
+        def __repr__(self):
+            return "EndOfInput(token_type={})".format(self.token_type)
+
+        def __str__(self):
+            return "<EndOfInput>::{}".format(self.token_type)
 
 class Char(Recognizer):
     def __init__(self, token_type, char):
@@ -425,7 +441,7 @@ class Lexer:
     '''
     def __init__(self, tokenizer, *recognizers):
         self.tokenizer = tokenizer
-        self.recognizers = { r.token_type : r for r in recognizers }
+        self.recognizers = recognizers
 
     @property
     def pos(self):
@@ -440,20 +456,13 @@ class Lexer:
     def next_char(self):
         return self.tokenizer.next_char()
 
-    def next_token(self, token_type=None):
-        if token_type is not None:
-            assert token_type in self.recognizers, "Token type '{}' not recognized".format(token_type)
-        
-            rec = self.recognizers[token_type]
+    def next_token(self):
+        for rec in self.recognizers:
             token = rec.recognize(self.tokenizer)
-            return token
-        else:
-            for rec in self.recognizers:
-                token = rec.recognize(self.tokenizer)
-                if token is not None:
-                    return token
+            if token is not None:
+                return token
 
-            return None
+        return None
                 
     def __next__(self):
         return self.next_token(token_type=None)
