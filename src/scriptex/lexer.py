@@ -434,18 +434,29 @@ class Lexer:
     def show_line(self, cursor="_"):
         return self.show_lines(1, cursor)
 
-    def show_lines(self, nb_lines, cursor="_"):
+    def show_lines(self, nb_lines=2, cursor="_"):
         return self.tokenizer.show_lines(nb_lines, cursor)
 
-    def next_token(self, token_type):
-        assert token_type is not None
-        assert token_type in self.recognizers, "Token type '{}' not recognized".format(token_type)
+    def next_char(self):
+        return self.tokenizer.next_char()
+
+    def next_token(self, token_type=None):
+        if token_type is not None:
+            assert token_type in self.recognizers, "Token type '{}' not recognized".format(token_type)
         
-        rec = self.recognizers[token_type]
+            rec = self.recognizers[token_type]
+            token = rec.recognize(self.tokenizer)
+            return token
+        else:
+            for rec in self.recognizers:
+                token = rec.recognize(self.tokenizer)
+                if token is not None:
+                    return token
 
-        token = rec.recognize(self.tokenizer)
-
-        return token
+            return None
+                
+    def __next__(self):
+        return self.next_token(token_type=None)
         
     def putback(self, token):
         """Put back a token in the lexer.
