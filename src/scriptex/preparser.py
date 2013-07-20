@@ -138,7 +138,7 @@ class Preparser:
             elif tok.token_type == "open_curly":
                 unparsed_content += "{"
             elif tok.token_type == "section":
-                section_title = tok.value.group(1)
+                section_title = tok.value.group(2)
                 section_depth = depth_of_section(tok.value.group(1))
                 if current_element.markup_type == "command":
                     raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished command before section")
