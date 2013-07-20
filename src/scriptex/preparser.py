@@ -11,7 +11,7 @@ In particular it handles :
 """
 
 import scriptex.lexer as lexer
-from scriptex.premarkup import PreDocument, PreSection, PreCommand 
+from scriptex.premarkup import PreDocument, PreSection, PreCommand, PreEnvironment
 
 class PreparseError(Exception):
     pass
@@ -44,10 +44,10 @@ class Preparser:
         self.recognizers.append(lexer.Regexp("protected", r"\\{|\\}"))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
         self.recognizers.append(lexer.Regexp("line_comment", r"\%.*$"))
-        self.recognizers.append(lexer.Regexp("env_header", r"\\begin{([^}]+)}(\[[^\]]+\])"))
+        self.recognizers.append(lexer.Regexp("env_header", r"\\begin{([^}]+)}(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Regexp("env_footer", r"\\end{([^}]+)}"))
         self.recognizers.append(lexer.Regexp("section", r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}"))
-        self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(\[[^\]]+\])"))
+        self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Char("open_curly", '{'))
         self.recognizers.append(lexer.Char("close_curly", '}'))
     
@@ -74,14 +74,14 @@ class Preparser:
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
                     unparsed_content = ""
-                env = PreEnvironment(tok.group(1), tok.group(2), tok.start_pos, tok.end_pos)
+                env = PreEnvironment(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(env)
                 element_stack.append(current_element)
                 current_element = env
             elif tok.token_type == "env_footer":
                 if current_element.markup_type != "environment":
                     raise PreparseError(tok.start_pos, tok.end_pos, "Cannot close environment")
-                if current_element.env_name != tok.group(1):
+                if current_element.env_name != tok.value.group(1):
                     raise PreparseError(tok.start_pos, tok.end_pos, "Mismatch environment '{}' (expecting '{}')".format(tok.group(1), current_element.env_name))
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
@@ -100,7 +100,9 @@ class Preparser:
                 current_element.append(cmd)
                 
                 ntok = lex.next_token()
-                if ntok.token_type == "open_curly":
+                if ntok is None:
+                    pass
+                elif ntok.token_type == "open_curly":
                     element_stack.append(current_element)
                     current_element = cmd
                 else:
@@ -119,7 +121,7 @@ class Preparser:
                 unparsed_content += "{"
             elif tok.token_type == "section":
                 section_title = tok.value.group(1)
-                section_depth = depth_of_section(tok.value.group(2))
+                section_depth = depth_of_section(tok.value.group(1))
                 if current_element.markup_type == "command":
                     raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished command before section")
                 elif current_element.markup_type == "environment":
@@ -129,7 +131,7 @@ class Preparser:
                     current_element.append(unparsed_content)
                     unparsed_content = ""
                 # close all sections of greater or equal depth
-                while current_element.depth >= section_depth:
+                while current_element.section_depth >= section_depth:
                     current_element.end_pos = tok.start_pos
                     current_element = element_stack.pop()
                 section = PreSection(section_title, section_depth, tok.start_pos, tok.end_pos)
@@ -167,4 +169,9 @@ class Preparser:
 
         return self.preparse(lex)
 
-    
+    def preparse_from_file(self, filename):
+        f = open(filename, "r")
+        input = f.read()
+        f.close()
+        doc = self.preparse_from_string(input)
+        return doc

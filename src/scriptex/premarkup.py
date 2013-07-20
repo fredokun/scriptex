@@ -13,7 +13,7 @@ class PreMarkup:
 class PreDocument(PreMarkup):
     def __init__(self, start_pos):
         super().__init__("document", start_pos, None)
-        self.depth = 0  # document has minimal depth
+        self.section_depth = 0  # document has minimal depth
 
     def __repr__(self):
         return "PreDocument(content={})".format(repr(self.content))
