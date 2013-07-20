@@ -47,6 +47,7 @@ class Preparser:
         self.recognizers.append(lexer.Regexp("env_header", r"\\begin{([^}]+)}(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Regexp("env_footer", r"\\end{([^}]+)}"))
         self.recognizers.append(lexer.Regexp("section", r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}"))
+        self.recognizers.append(lexer.Regexp("cmd_pre_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?{{{"))
         self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Char("open_curly", '{'))
         self.recognizers.append(lexer.Char("close_curly", '}'))
@@ -117,6 +118,23 @@ class Preparser:
                     current_element = element_stack.pop()
                 else:
                     unparsed_content += "}"
+            elif tok.token_type == "cmd_pre_header":
+                if unparsed_content != "":
+                    current_element.append(unparsed_content)
+                    unparsed_content = ""
+                cmd = PreCommand(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
+                current_element.append(cmd)
+                preformated = ""
+                eat_preformated = True
+                while eat_preformated:
+                    footer = lex.peek_chars(3)
+                    if footer is None:
+                        raise PreparseError(tok.start_pos, lex.pos, "Preformated command unfinished (missing '}}}')")
+                    elif footer == "}}}":
+                        cmd.append(preformated)
+                        eat_preformated = False
+                    else:
+                        preformated += lex.next_char()
             elif tok.token_type == "open_curly":
                 unparsed_content += "{"
             elif tok.token_type == "section":

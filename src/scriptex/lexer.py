@@ -456,6 +456,12 @@ class Lexer:
     def next_char(self):
         return self.tokenizer.next_char()
 
+    def peek_char(self):
+        return self.tokenizer.peek_char()
+
+    def peek_chars(self, nb_chars):
+        return self.tokenizer.peek_chars(nb_chars)
+
     def next_token(self):
         for rec in self.recognizers:
             token = rec.recognize(self.tokenizer)

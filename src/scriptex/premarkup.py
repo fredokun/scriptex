@@ -19,11 +19,12 @@ class PreDocument(PreMarkup):
         return "PreDocument(content={})".format(repr(self.content))
         
 class PreCommand(PreMarkup):
-    def __init__(self, cmd_name, cmd_opts, header_start_pos, header_end_pos):
+    def __init__(self, cmd_name, cmd_opts, header_start_pos, header_end_pos, preformated=False):
         super().__init__("command", header_start_pos, header_end_pos)
         self.cmd_name = cmd_name
         self.cmd_opts = cmd_opts
         self.header_end_pos = header_end_pos
+        self.preformated = preformated
 
     def __repr__(self):
         return "PreCommand(cmd_name={}, cmd_opts={}, content={})".format(self.cmd_name, self.cmd_opts, repr(self.content))
