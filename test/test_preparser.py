@@ -20,7 +20,7 @@ class TestLexerString(unittest.TestCase):
 
 """)
 
-        # print("doc 1 = {}".format(ret))
+        print("doc 1 = {}".format(ret))
 
     def test_command_simple(self):
         parser = Preparser()
@@ -36,12 +36,13 @@ contents of the command
 
 """)
 
-        # print("doc 2 = {}".format(ret))
+        print("doc 2 = {}".format(ret))
 
     def test_env_simple(self):
         parser = Preparser()
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        # BREAKPOINT >>> # 
+        import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = parser.preparse_from_string(r"""
 % a comment before the environment
 \begin{env}
@@ -56,7 +57,7 @@ contents of the command
 % a last comment outside the environment
 """)
 
-        #print("doc 3 = {}".format(ret))
+        print("doc 3 = {}".format(ret))
 
     def test_env_itemize(self):
         parser = Preparser()

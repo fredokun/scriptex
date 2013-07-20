@@ -43,7 +43,7 @@ class Preparser:
 
         self.recognizers.append(lexer.Regexp("protected", r"\\{|\\}"))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
-        self.recognizers.append(lexer.Regexp("line_comment", r"%(.)*$"))
+        self.recognizers.append(lexer.Regexp("line_comment", r"\%.*$"))
         self.recognizers.append(lexer.Regexp("env_header", r"\\begin{([^}]+)}(\[[^\]]+\])"))
         self.recognizers.append(lexer.Regexp("env_footer", r"\\end{([^}]+)}"))
         self.recognizers.append(lexer.Regexp("section", r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}"))
@@ -80,7 +80,7 @@ class Preparser:
                 current_element = env
             elif tok.token_type == "env_footer":
                 if current_element.markup_type != "environment":
-                    raise PreparseError(tok.start_pos, tok.end_ops, "Cannot close environment")
+                    raise PreparseError(tok.start_pos, tok.end_pos, "Cannot close environment")
                 if current_element.env_name != tok.group(1):
                     raise PreparseError(tok.start_pos, tok.end_pos, "Mismatch environment '{}' (expecting '{}')".format(tok.group(1), current_element.env_name))
                 if unparsed_content != "":
@@ -114,7 +114,9 @@ class Preparser:
                     # Pop parent element
                     current_element = element_stack.pop()
                 else:
-                    unparsed_content.append("}")
+                    unparsed_content += "}"
+            elif tok.token_type == "open_curly":
+                unparsed_content += "{"
             elif tok.token_type == "section":
                 section_title = tok.value.group(1)
                 section_depth = depth_of_section(tok.value.group(2))
