@@ -38,6 +38,24 @@ contents of the command
 
         print("doc 2 = {}".format(ret))
 
+    def test_command_simple_preformated(self):
+        parser = Preparser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.preparse_from_string(r"""
+% this is a comment
+\mycommand[key1=value1,key2=value2]{{{
+contents of the command
+  is preformated with {  curly brackets
+  allowed }  
+% a comment in the command
+}}}
+    % after some space
+
+""")
+
+        print("doc 2 bis = {}".format(ret))
+
     def test_env_simple(self):
         parser = Preparser()
 

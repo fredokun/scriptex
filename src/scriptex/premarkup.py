@@ -27,7 +27,7 @@ class PreCommand(PreMarkup):
         self.preformated = preformated
 
     def __repr__(self):
-        return "PreCommand(cmd_name={}, cmd_opts={}, content={})".format(self.cmd_name, self.cmd_opts, repr(self.content))
+        return "PreCommand(cmd_name={}, cmd_opts={}, preformated={}, content={})".format(self.cmd_name, self.cmd_opts, self.preformated, repr(self.content))
 
 class PreEnvironment(PreMarkup):
     def __init__(self, env_name, env_opts, header_start_pos, header_end_pos):
