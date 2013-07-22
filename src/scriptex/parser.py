@@ -1,4 +1,4 @@
-"""Preparser.
+"""Oarser.
 The objective of the preliminary parsing phase is to
 (try to) uncover the overall structure of the input document.
 
@@ -11,9 +11,9 @@ In particular it handles :
 """
 
 import scriptex.lexer as lexer
-from scriptex.premarkup import PreDocument, PreSection, PreCommand, PreEnvironment
+from scriptex.markup import Document, Section, Command, Environment
 
-class PreparseError(Exception):
+class ParseError(Exception):
     pass
 
 
@@ -33,7 +33,7 @@ def depth_of_section(section_type):
     else:
         raise ValueError("Not a valid section type: {}".format(section_type))
 
-class Preparser:
+class Parser:
     def __init__(self):
         self.recognizers = []
         self.prepare_recognizers()
@@ -52,38 +52,38 @@ class Preparser:
         self.recognizers.append(lexer.Char("open_curly", '{'))
         self.recognizers.append(lexer.Char("close_curly", '}'))
     
-    def preparse(self, lex):
+    def parse(self, lex):
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
-        doc = PreDocument(lex.pos)
+        doc = Document(lex.pos)
         
         element_stack = []
 
         current_element = doc
-        continue_preparse = True
+        continue_parse = True
         unparsed_content = ""
-        while continue_preparse:
+        while continue_parse:
             tok = lex.next_token()
             if tok is None:
                 unparsed_content += lex.next_char()
             elif tok.token_type == "end_of_input":
-                continue_preparse = False
+                continue_parse = False
             elif tok.token_type == "line_comment":
                 pass # just skip this
             elif tok.token_type == "env_header":
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
                     unparsed_content = ""
-                env = PreEnvironment(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
+                env = Environment(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(env)
                 element_stack.append(current_element)
                 current_element = env
             elif tok.token_type == "env_footer":
                 if current_element.markup_type != "environment":
-                    raise PreparseError(tok.start_pos, tok.end_pos, "Cannot close environment")
+                    raise ParseError(tok.start_pos, tok.end_pos, "Cannot close environment")
                 if current_element.env_name != tok.value.group(1):
-                    raise PreparseError(tok.start_pos, tok.end_pos, "Mismatch environment '{}' (expecting '{}')".format(tok.group(1), current_element.env_name))
+                    raise ParseError(tok.start_pos, tok.end_pos, "Mismatch environment '{}' (expecting '{}')".format(tok.group(1), current_element.env_name))
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
                     unparsed_content = ""
@@ -97,7 +97,7 @@ class Preparser:
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
                     unparsed_content = ""
-                cmd = PreCommand(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
+                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
                 
                 ntok = lex.next_token()
@@ -122,14 +122,14 @@ class Preparser:
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
                     unparsed_content = ""
-                cmd = PreCommand(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
+                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
                 current_element.append(cmd)
                 preformated = ""
                 eat_preformated = True
                 while eat_preformated:
                     footer = lex.peek_chars(3)
                     if footer is None:
-                        raise PreparseError(tok.start_pos, lex.pos, "Preformated command unfinished (missing '}}}')")
+                        raise ParseError(tok.start_pos, lex.pos, "Preformated command unfinished (missing '}}}')")
                     elif footer == "}}}":
                         cmd.append(preformated)
                         eat_preformated = False
@@ -141,9 +141,9 @@ class Preparser:
                 section_title = tok.value.group(2)
                 section_depth = depth_of_section(tok.value.group(1))
                 if current_element.markup_type == "command":
-                    raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished command before section")
+                    raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before section")
                 elif current_element.markup_type == "environment":
-                    raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished environment before section")
+                    raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished environment before section")
                 # ok to parse new section
                 if unparsed_content != "":
                     current_element.append(unparsed_content)
@@ -152,7 +152,7 @@ class Preparser:
                 while current_element.section_depth >= section_depth:
                     current_element.end_pos = tok.start_pos
                     current_element = element_stack.pop()
-                section = PreSection(section_title, section_depth, tok.start_pos, tok.end_pos)
+                section = Section(section_title, section_depth, tok.start_pos, tok.end_pos)
                 current_element.append(section)
                 element_stack.append(current_element)
                 current_element = section
@@ -160,7 +160,7 @@ class Preparser:
                 unparsed_content += tok.value[1:]
             else:
                 # unrecognized token type
-                raise PreparseError(tok.start_pos, tok.end_pos, "Unrecognized token type: {}".format(tok.token_type))
+                raise ParseError(tok.start_pos, tok.end_pos, "Unrecognized token type: {}".format(tok.token_type))
 
         # at the end of input
         if unparsed_content != "":
@@ -169,9 +169,9 @@ class Preparser:
         
         while current_element != doc:
             if current_element.markup_type == "command":
-                raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
+                raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
             elif current_element.markup_type == "environment":
-                raise PreparseError(current_element.start_pos, tok.start_pos, "Unfinished environment before end of document")
+                raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished environment before end of document")
             else:
                 # ok to close
                 current_element.end_pos = tok.start_pos
@@ -181,15 +181,15 @@ class Preparser:
         return doc
 
             
-    def preparse_from_string(self, input):
+    def parse_from_string(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
         lex = lexer.Lexer(tokens, *self.recognizers)
 
-        return self.preparse(lex)
+        return self.parse(lex)
 
-    def preparse_from_file(self, filename):
+    def parse_from_file(self, filename):
         f = open(filename, "r")
         input = f.read()
         f.close()
-        doc = self.preparse_from_string(input)
+        doc = self.parse_from_string(input)
         return doc

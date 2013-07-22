@@ -8,13 +8,13 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from scriptex.preparser import Preparser
+from scriptex.parser import Parser
 
 class TestLexerString(unittest.TestCase):
     def test_line_comment(self):
-        parser = Preparser()
+        parser = Parser()
 
-        ret = parser.preparse_from_string("""
+        ret = parser.parse_from_string("""
 % this is a comment
     % after some space
 
@@ -23,10 +23,10 @@ class TestLexerString(unittest.TestCase):
         print("doc 1 = {}".format(ret))
 
     def test_command_simple(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 % this is a comment
 \mycommand[key1=value1,key2=value2]{
 contents of the command
@@ -39,10 +39,10 @@ contents of the command
         print("doc 2 = {}".format(ret))
 
     def test_command_simple_preformated(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 % this is a comment
 \mycommand[key1=value1,key2=value2]{{{
 contents of the command
@@ -57,10 +57,10 @@ contents of the command
         print("doc 2 bis = {}".format(ret))
 
     def test_env_simple(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 % a comment before the environment
 \begin{env}
 % this is a comment
@@ -77,10 +77,10 @@ contents of the command
         print("doc 3 = {}".format(ret))
 
     def test_env_itemize(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 % a comment before the environment
 \begin{itemize}
 % this is a comment
@@ -101,10 +101,10 @@ contents of the command
         
 
     def test_env_itemize2(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 % a comment before the environment
 \begin{itemize}
 \item 1
@@ -122,20 +122,20 @@ contents of the command
         print("doc 5 = {}".format(ret))
 
     def test_parentheses(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_string(r"""
+        ret = parser.parse_from_string(r"""
 text (in parentheses)
 """)
 
         print("doc 6 = {}".format(ret))
         
     def test_basic_example(self):
-        parser = Preparser()
+        parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.preparse_from_file("../examples/basic.scrip.tex")
+        ret = parser.parse_from_file("../examples/basic.scrip.tex")
 
         print(ret)
 
