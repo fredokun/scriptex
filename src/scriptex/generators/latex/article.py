@@ -33,8 +33,6 @@ class LatexArticleGenerator(DocumentGenerator):
         super().generate()
 
 
-
-
 class DefaultLatexCommandGenerator(CommandGenerator):
     def __init__(self):
         pass
@@ -42,10 +40,10 @@ class DefaultLatexCommandGenerator(CommandGenerator):
     def enter_command(self, generator, cmd):
         opts_str = "" if cmd.cmd_opts is None else "[{}]".format(cmd.cmd_opts)
         open_str = "" if not cmd.content else "{{"
-        generator.output.append(cmd.start_pos, "\\{}".format(cmd_name) + opts_str + open_str)
+        generator.output.append(cmd.start_pos.lpos, "\\{}".format(cmd_name) + opts_str + open_str)
 
     def exit_command(self, generator, cmd):
         if cmd.content:
-            generator.output.append(cmd.end_pos, "}")
+            generator.output.append(cmd.end_pos.lpos, "}")
 
 
