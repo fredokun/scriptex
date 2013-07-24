@@ -33,6 +33,22 @@ def depth_of_section(section_type):
     else:
         raise ValueError("Not a valid section type: {}".format(section_type))
 
+def section_of_depth(section_depth):
+    if section_depth == 1:
+        return "part"
+    elif section_depth == 2:
+        return "chapter"
+    elif section_depth == 3:
+        return "section"
+    elif section_depth == 4:
+        return "subsection"
+    elif section_depth == 5:
+        return "subsubsection"
+    elif section_depth == 6:
+        return "paragraph"
+    else:
+        raise ValueError("Not a valid section depth: {}".format(section_depth))
+    
 class Parser:
     def __init__(self):
         self.recognizers = []
@@ -152,7 +168,7 @@ class Parser:
                 while current_element.section_depth >= section_depth:
                     current_element.end_pos = tok.start_pos
                     current_element = element_stack.pop()
-                section = Section(section_title, section_depth, tok.start_pos, tok.end_pos)
+                section = Section(section_title, tok.value.group(1), section_depth, tok.start_pos, tok.end_pos)
                 current_element.append(section)
                 element_stack.append(current_element)
                 current_element = section

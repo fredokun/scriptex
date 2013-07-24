@@ -2,6 +2,7 @@
 
 """
 
+from scriptex.processor import CommandProcessor
 
 class TitleProcessor(CommandProcessor):
     def __init__(self):

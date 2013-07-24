@@ -15,6 +15,7 @@ class DocumentGenerator:
         self.default_command_generator = None
         self.default_environment_generator = None
         self.default_section_generator = None
+        self.text_generator = None
         
     def register_command_generator(self, cmd_name, cmd_generator):
         if cmd_name in self.cmd_generators:
@@ -41,6 +42,8 @@ class DocumentGenerator:
 
         
     def generate(self):
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        
         self.markup_stack = [(self.document, 0)]
         self.environment_stack = []
         self.command_stack = []
@@ -65,9 +68,9 @@ class DocumentGenerator:
                     if 0 in self.sec_generators:
                         self.sec_generators[0].enter_section(self, self.markup)
                     elif self.markup.section_depth in self.sec_generators:
-                        self.sec_generators[self.markup.section_depth].enter_secton(self, self.markup)
+                        self.sec_generators[self.markup.section_depth].enter_section(self, self.markup)
                     elif self.default_section_generator is not None:
-                        self.default_section_generator.enter_secton(self, self.markup)
+                        self.default_section_generator.enter_section(self, self.markup)
                     self.section_stack.append(self.markup)
                 # push back in queue but next time generate content at index 0 (first child)
                 self.markup_stack.append((self.markup, 0))
@@ -103,7 +106,8 @@ class DocumentGenerator:
                     if isinstance(child, Markup):
                         self.markup_stack.append((child, -1))
                     else:
-                        pass # XXX: generate non-markup content in some way ?
+                        if self.text_generator is not None:
+                            self.text_generator.on_text(self, child)
 
         # done generating
 
@@ -113,10 +117,10 @@ class CommandGenerator:
     def __init__(self):
         pass
 
-    def enter_command(self, generating, cmd):
+    def enter_command(self, generator, cmd):
         pass # should be overriden
 
-    def exit_command(self, generating, cmd):
+    def exit_command(self, generator, cmd):
         pass
 
 
@@ -124,10 +128,10 @@ class EnvironmentGenerator:
     def __init__(self):
         pass
 
-    def enter_environment(self, generating, env):
+    def enter_environment(self, generator, env):
         pass
 
-    def exit_environment(self, generating, env):
+    def exit_environment(self, generator, env):
         pass
 
 
@@ -135,8 +139,16 @@ class SectionGenerator:
     def __init__(self):
         pass
 
-    def enter_section(self, generating, cmd):
+    def enter_section(self, generator, cmd):
         pass # should be overriden
 
-    def exit_section(self, generating, cmd):
+    def exit_section(self, generator, cmd):
         pass
+
+class TextGenerator:
+    def __init__(self):
+        pass
+
+    def on_text(self, generator, text):
+        pass
+

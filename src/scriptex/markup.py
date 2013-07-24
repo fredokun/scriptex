@@ -40,14 +40,15 @@ class Environment(Markup):
         return "Environment(env_name={},env_opts={},content={})".format(self.env_name, self.env_opts, repr(self.content))
 
 class Section(Markup):
-    def __init__(self, section_title, section_depth, header_start_pos, header_end_pos):
+    def __init__(self, section_title, section_name, section_depth, header_start_pos, header_end_pos):
         super().__init__("section", header_start_pos, None)
         self.section_title = section_title
+        self.section_name = section_name
         self.section_depth = section_depth
         self.header_end_pos = header_end_pos
 
     def __repr__(self):
-        return "Section(section_title={},section_depth={},content={})".format(self.section_title, self.section_depth, repr(self.content))
+        return "Section(section_title={},section_name={},section_depth={},content={})".format(self.section_title, self.section_name, self.section_depth, repr(self.content))
 
 
 
