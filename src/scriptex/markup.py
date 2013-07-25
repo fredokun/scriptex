@@ -51,5 +51,31 @@ class Section(Markup):
         return "Section(section_title={},section_name={},section_depth={},content={})".format(self.section_title, self.section_name, self.section_depth, repr(self.content))
 
 
+class Text:
+    def __init__(self, text, start_pos, end_pos):
+        self.text = text
+        self.start_pos = start_pos
+        self.end_pos = end_pos
 
+    def __repr__(self):
+        return 'Text("{}")'.format(self.text)
+
+class Newlines:
+    def __init__(self, newlines, start_pos, end_pos):
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.newlines = newlines
+
+    def __repr__(self):
+        return "Newlines({})".format(len(self.newlines))
+
+class Spaces:
+    def __init__(self, spaces, start_pos, end_pos):
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.spaces = spaces
+
+    def __repr__(self):
+        return "Spaces({})".format(len(self.spaces))
+        
 

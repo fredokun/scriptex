@@ -11,7 +11,7 @@ In particular it handles :
 """
 
 import scriptex.lexer as lexer
-from scriptex.markup import Document, Section, Command, Environment
+from scriptex.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
 
 class ParseError(Exception):
     pass
@@ -57,6 +57,8 @@ class Parser:
     def prepare_recognizers(self):
         ident_re = r"[a-zA-Z_][a-zA-Z_0-9]*"
 
+        self.recognizers.append(lexer.CharIn("newline", "\n", "\r"))
+        self.recognizers.append(lexer.Regexp("spaces", r"[ \t]+"))
         self.recognizers.append(lexer.Regexp("protected", r"\\{|\\}"))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
         self.recognizers.append(lexer.Regexp("line_comment", r"\%.*$"))
@@ -67,7 +69,36 @@ class Parser:
         self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Char("open_curly", '{'))
         self.recognizers.append(lexer.Char("close_curly", '}'))
-    
+
+    class UnparsedContent:
+        def __init__(self):
+            self.content = ""
+            self.start_pos = None
+            self.end_pos = None
+
+        def append_char(self, lexer,):
+            if self.start_pos is None:
+                self.start_pos = lexer.pos
+            self.content += lexer.next_char()
+            self.end_pos = lexer.pos
+
+        def append_str(self, str_, start_pos, end_pos):
+            if self.start_pos is None:
+                self.start_pos = start_pos
+
+                self.content += str_
+                self.end_pos = end_pos
+
+        def flush(self, parent):
+            if self.content != "":
+                parent.append(Text(self.content, self.start_pos, self.end_pos))
+                self.content = ""
+            self.start_pos = None
+            self.end_pos = None
+
+        def __repr__(self):
+            return "UnparsedContent({},start_pos={},end_pos={})".format(repr(self.content), self.start_pos, self.end_pos)
+        
     def parse(self, lex):
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
@@ -78,19 +109,27 @@ class Parser:
 
         current_element = doc
         continue_parse = True
-        unparsed_content = ""
+        unparsed_content = Parser.UnparsedContent()
         while continue_parse:
             tok = lex.next_token()
             if tok is None:
-                unparsed_content += lex.next_char()
+                unparsed_content.append_char(lex)
+            elif tok.token_type == "newline":
+                unparsed_content.flush(current_element)
+                newlines = tok.value
+                while lex.peek_char() == "\n" or lex.peek_char() == "\r":
+                    newlines += lex.next_char()
+                current_element.append(Newlines(newlines, tok.start_pos, tok.end_pos))
+            elif tok.token_type == "spaces":
+                unparsed_content.flush(current_element)
+                current_element.append(Spaces(tok.value.group(0), tok.start_pos, tok.end_pos))
             elif tok.token_type == "end_of_input":
+                unparsed_content.flush(current_element)
                 continue_parse = False
             elif tok.token_type == "line_comment":
                 pass # just skip this
             elif tok.token_type == "env_header":
-                if unparsed_content != "":
-                    current_element.append(unparsed_content)
-                    unparsed_content = ""
+                unparsed_content.flush(current_element)
                 env = Environment(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(env)
                 element_stack.append(current_element)
@@ -100,9 +139,7 @@ class Parser:
                     raise ParseError(tok.start_pos, tok.end_pos, "Cannot close environment")
                 if current_element.env_name != tok.value.group(1):
                     raise ParseError(tok.start_pos, tok.end_pos, "Mismatch environment '{}' (expecting '{}')".format(tok.group(1), current_element.env_name))
-                if unparsed_content != "":
-                    current_element.append(unparsed_content)
-                    unparsed_content = ""
+                unparsed_content.flush(current_element)
 
                 current_element.footer_start_pos = tok.start_pos
                 current_element.end_pos = tok.end_pos
@@ -110,9 +147,7 @@ class Parser:
                 # Pop parent element
                 current_element = element_stack.pop()
             elif tok.token_type == "cmd_header":
-                if unparsed_content != "":
-                    current_element.append(unparsed_content)
-                    unparsed_content = ""
+                unparsed_content.flush(current_element)
                 cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
                 
@@ -126,18 +161,14 @@ class Parser:
                     lex.putback(ntok)
             elif tok.token_type == "close_curly":
                 if current_element.markup_type == "command":
-                    if unparsed_content != "":
-                        current_element.append(unparsed_content)
-                        unparsed_content = ""
+                    unparsed_content.flush(current_element)
                     current_element.end_pos = tok.end_pos
                     # Pop parent element
                     current_element = element_stack.pop()
                 else:
-                    unparsed_content += "}"
+                    unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
             elif tok.token_type == "cmd_pre_header":
-                if unparsed_content != "":
-                    current_element.append(unparsed_content)
-                    unparsed_content = ""
+                unparsed_content.flush(current_element)
                 cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
                 current_element.append(cmd)
                 preformated = ""
@@ -152,7 +183,7 @@ class Parser:
                     else:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":
-                unparsed_content += "{"
+                unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
             elif tok.token_type == "section":
                 section_title = tok.value.group(2)
                 section_depth = depth_of_section(tok.value.group(1))
@@ -161,9 +192,7 @@ class Parser:
                 elif current_element.markup_type == "environment":
                     raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished environment before section")
                 # ok to parse new section
-                if unparsed_content != "":
-                    current_element.append(unparsed_content)
-                    unparsed_content = ""
+                unparsed_content.flush(current_element)
                 # close all sections of greater or equal depth
                 while current_element.section_depth >= section_depth:
                     current_element.end_pos = tok.start_pos
@@ -173,15 +202,14 @@ class Parser:
                 element_stack.append(current_element)
                 current_element = section
             elif tok.token_type == "protected":
-                unparsed_content += tok.value[1:]
+                unparsed_content.append_str(tok.value[1:], tok.start_pos, tok.end_pos)
             else:
                 # unrecognized token type
                 raise ParseError(tok.start_pos, tok.end_pos, "Unrecognized token type: {}".format(tok.token_type))
 
         # at the end of input
-        if unparsed_content != "":
-            current_element.append(unparsed_content)
-            unparsed_content = ""
+        unparsed_content.flush(current_element)
+
         
         while current_element != doc:
             if current_element.markup_type == "command":

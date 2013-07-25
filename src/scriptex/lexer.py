@@ -179,8 +179,7 @@ class Regexp(Recognizer):
         return "Regexp(token_type={},regexp={})".format(self.token_type, self.re_str)
 
     def __str__(self):
-        return '"{}"::{}'.format(self.re_str, self.token_type)
-
+        return '"{}"::{}'.format(self.re_str, self.token_type)            
         
 class Tokenizer:
     '''
@@ -457,7 +456,7 @@ class Lexer:
         return self.tokenizer.next_char()
 
     def peek_char(self):
-        return self.tokenizer.peek_char()
+        return self.tokenizer.peek_char
 
     def peek_chars(self, nb_chars):
         return self.tokenizer.peek_chars(nb_chars)
