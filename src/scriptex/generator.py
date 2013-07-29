@@ -1,7 +1,7 @@
 """The document generator produces an output document.
 """
 
-from scriptex.markup import Markup
+from scriptex.markup import Markup, Text, Spaces, Newlines, SkipMarkup
 
 class GenerateError(Exception):
     pass
@@ -16,6 +16,8 @@ class DocumentGenerator:
         self.default_environment_generator = None
         self.default_section_generator = None
         self.text_generator = None
+        self.spaces_generator = None
+        self.newlines_generator = None
         
     def register_command_generator(self, cmd_name, cmd_generator):
         if cmd_name in self.cmd_generators:
@@ -105,9 +107,20 @@ class DocumentGenerator:
                     self.markup_stack.append((self.markup, self.content_index+1))
                     if isinstance(child, Markup):
                         self.markup_stack.append((child, -1))
-                    else:
+                    elif isinstance(child, Text):
                         if self.text_generator is not None:
                             self.text_generator.on_text(self, child)
+                    elif isinstance(child, Spaces):
+                        if self.spaces_generator is not None:
+                            self.spaces_generator.on_spaces(self, child)
+                    elif isinstance(child, Newlines):
+                        if self.newlines_generator is not None:
+                            self.newlines_generator.on_newlines(self, child)
+                    elif isinstance(child, SkipMarkup):
+                        pass # skip markup
+                    else:
+                        raise GenerateError("Wrong child type: {} (please report)".format(repr(child)))
+                        
 
         # done generating
 
@@ -152,3 +165,16 @@ class TextGenerator:
     def on_text(self, generator, text):
         pass
 
+class SpacesGenerator:
+    def __init__(self):
+        pass
+
+    def on_spaces(self, generator, spaces):
+        pass
+
+class NewlinesGenerator:
+    def __init__(self):
+        pass
+
+    def on_newlines(self, generator, newlines):
+        pass

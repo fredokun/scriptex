@@ -3,7 +3,7 @@ by interpreting commands and/or environments.
 
 """
 
-from scriptex.markup import Markup
+from scriptex.markup import Markup, Text, Spaces, Newlines, SkipMarkup
 
 class ProcessError(Exception):
     pass
@@ -14,6 +14,9 @@ class DocumentProcessor:
         self.cmd_processors = dict()
         self.env_processors = dict()
         self.sec_processors = dict()
+        self.text_processor = TextProcessor()  # default: copy as source
+        self.spaces_processor = SpacesProcessor()
+        self.newlines_processor = NewlinesProcessor()
         
     def register_command_processor(self, cmd_name, cmd_processor):
         if cmd_name in self.cmd_processors:
@@ -104,8 +107,22 @@ class DocumentProcessor:
                     self.markup_stack.append((self.markup, self.content_index+1, self.source_markup, self.source_index))
                     if isinstance(child, Markup):
                         self.markup_stack.append((child, -1, self.markup, self.content_index))
+                    elif isinstance(child, Text) and self.text_processor is not None:
+                        ntext = self.text_processor.process_text(self, child)
+                        if ntext is not None:
+                            self.markup.content[self.content_index] = ntext
+                    elif isinstance(child, Spaces) and self.spaces_processor is not None:
+                        nspaces = self.spaces_processor.process_spaces(self, child)
+                        if nspaces is not None:
+                            self.markup.content[self.content_index] = nspaces                        
+                    elif isinstance(child, Newlines) and self.newlines_processor is not None:
+                        nnewlines = self.newlines_processor.process_newlines(self, child)
+                        if nnewlines is not None:
+                            self.markup.content[self.content_index] = nnewlines
+                    elif isinstance(child, SkipMarkup):
+                        pass # skip this markup
                     else:
-                        pass # XXX: process non-markup content in some way ?
+                        raise ProcessError("Wrong child type: {} (please report)".format(repr(child)))
 
         # done processing
 
@@ -142,3 +159,24 @@ class SectionProcessor:
 
     def process_section(self, processing, cmd):
         return (None, False)  # default process is :  do nothing
+
+class TextProcessor:
+    def __init__(self):
+        pass
+
+    def process_text(self, processing, text):
+        return text
+
+class SpacesProcessor:
+    def __init__(self):
+        pass
+
+    def process_spaces(self, processing, spaces):
+        return spaces
+
+class NewlinesProcessor:
+    def __init__(self):
+        pass
+
+    def process_newlines(self, processing, newlines):
+        return newlines

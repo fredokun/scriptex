@@ -77,5 +77,11 @@ class Spaces:
 
     def __repr__(self):
         return "Spaces({})".format(len(self.spaces))
-        
+
+class SkipMarkup:
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "SkipMarkup()"
 

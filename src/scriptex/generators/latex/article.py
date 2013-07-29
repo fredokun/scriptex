@@ -1,7 +1,8 @@
 """Basic latex generator based on document class article.
 """
 
-from scriptex.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator, TextGenerator
+from scriptex.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
+from scriptex.generator import TextGenerator, SpacesGenerator, NewlinesGenerator
 
 class LatexOutput:
     def __init__(self):
@@ -12,6 +13,8 @@ class LatexOutput:
 
     def register_orig_pos(self, orig_pos):
         if orig_pos is None:
+            return self.last_pos
+        elif orig_pos == self.last_pos:
             return self.last_pos
         # original position given
         self.newline(None)
@@ -43,6 +46,8 @@ class LatexArticleGenerator(DocumentGenerator):
         self.default_environment_generator = DefaultLatexEnvironmentGenerator()
         self.default_section_generator = DefaultLatexSectionGenerator()
         self.text_generator = LatexTextGenerator()
+        self.spaces_generator = LatexSpacesGenerator()
+        self.newlines_generator = LatexNewlinesGenerator()
         
     def generate(self):
         self.output = LatexOutput()
@@ -93,17 +98,27 @@ class LatexTextGenerator(TextGenerator):
         pass
 
     def on_text(self, generator, text):
-        acc = ""
-        for ch in text:
-            if ch == "\n" or ch == "\r":
-                if acc != "":
-                    generator.output.append(None, acc)
-                    acc = ""
-                generator.output.newline(None)
-            else:
-                acc += ch
+        generator.output.append(text.start_pos.lpos, text.text)
+        # TODO:  escape strings for latex output
+        
+class LatexSpacesGenerator(SpacesGenerator):
+    def __init__(self):
+        pass
 
-        if acc != "":
-            generator.output.append(None, acc)
+    def on_spaces(self, generator, spaces):
+        generator.output.append(None, spaces.spaces)
+
+
+class LatexNewlinesGenerator(NewlinesGenerator):
+    def __init__(self):
+        pass
+
+    def on_newlines(self, generator, newlines):
+        lpos = newlines.start_pos.lpos
+        for _ in newlines.newlines:
+            generator.output.newline(None)
+            lpos += 1
+
+
 
 
