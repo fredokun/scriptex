@@ -178,8 +178,9 @@ class Parser:
                     if footer is None:
                         raise ParseError(tok.start_pos, lex.pos, "Preformated command unfinished (missing '}}}')")
                     elif footer == "}}}":
-                        cmd.append(preformated)
+                        cmd.content = preformated
                         eat_preformated = False
+                        lex.next_chars(3)
                     else:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":

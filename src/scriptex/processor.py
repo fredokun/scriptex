@@ -49,13 +49,19 @@ class DocumentProcessor:
         self.command_stack = []
         self.section_stack = []
 
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
         while self.markup_stack:
             self.markup, self.content_index, self.source_markup, self.source_index = self.markup_stack.pop()
             if self.content_index == -1: # command/env not processed
                 if self.markup.markup_type == "command":
                     if self.markup.cmd_name in self.cmd_processors:
                         self.cmd_processors[self.markup.cmd_name].enter_command(self, self.markup)
-                    self.command_stack.append(self.markup)
+                    if self.markup.preformated:
+                        if self.markup.cmd_name in self.cmd_processors:
+                            self.cmd_processors[self.markup.cmd_name].process_command(self, self.markup)
+                    else:
+                        self.command_stack.append(self.markup)
                 elif self.markup.markup_type == "environment":
                     if self.markup.env_name in self.env_processors:
                         self.env_processors[self.markup.env_name].enter_environment(self, self.markup)
@@ -66,8 +72,9 @@ class DocumentProcessor:
                     elif self.markup.section_depth in self.sec_processors:
                         self.sec_processors[self.markup.section_depth].enter_secton(self, self.markup)
                     self.section_stack.append(self.markup)
-                # push back in queue but next time process content at index 0 (first child)
-                self.markup_stack.append((self.markup, 0, self.source_markup, self.source_index))
+                if self.markup.markup_type != "command" or not self.markup.preformated:
+                    # push back in queue but next time process content at index 0 (first child)
+                    self.markup_stack.append((self.markup, 0, self.source_markup, self.source_index))
             else: # processing of markup already started
                 if self.content_index == len(self.markup.content):
                     # done processing content

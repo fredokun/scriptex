@@ -59,7 +59,13 @@ class DocumentGenerator:
                         self.cmd_generators[self.markup.cmd_name].enter_command(self, self.markup)
                     elif self.default_command_generator is not None:
                         self.default_command_generator.enter_command(self, self.markup)
-                    self.command_stack.append(self.markup)
+                    if self.markup.preformated:
+                        if self.markup.cmd_name in self.cmd_generators:
+                            self.cmd_generators[self.markup.cmd_name].exit_command(self, self.markup)
+                        elif self.default_command_generator is not None:
+                            self.default_command_generator.exit_command(self, self.markup)
+                    else:
+                        self.command_stack.append(self.markup)
                 elif self.markup.markup_type == "environment":
                     if self.markup.env_name in self.env_generators:
                         self.env_generators[self.markup.env_name].enter_environment(self, self.markup)
@@ -74,8 +80,9 @@ class DocumentGenerator:
                     elif self.default_section_generator is not None:
                         self.default_section_generator.enter_section(self, self.markup)
                     self.section_stack.append(self.markup)
-                # push back in queue but next time generate content at index 0 (first child)
-                self.markup_stack.append((self.markup, 0))
+                if self.markup.markup_type != "command" or not self.markup.preformated:
+                    # push back in queue but next time generate content at index 0 (first child)
+                    self.markup_stack.append((self.markup, 0))
             else: # generating of markup already started
                 if self.content_index == len(self.markup.content):
                     # done generating content
