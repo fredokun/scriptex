@@ -11,8 +11,9 @@ class Markup:
         self.content.append(element)
 
 class Document(Markup):
-    def __init__(self, start_pos):
+    def __init__(self, filename, start_pos):
         super().__init__("document", start_pos, None)
+        self.filename = filename
         self.section_depth = 0  # document has minimal depth
 
     def __repr__(self):
@@ -59,6 +60,16 @@ class Text:
 
     def __repr__(self):
         return 'Text("{}")'.format(self.text)
+
+class Preformated:
+    def __init__(self, text, start_pos, end_pos):
+        self.text = text
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+
+    def __repr__(self):
+        return 'Preformated("{}")'.format(self.text)
+    
 
 class Newlines:
     def __init__(self, newlines, start_pos, end_pos):
