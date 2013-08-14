@@ -53,7 +53,6 @@ class LatexArticleGenerator(DocumentGenerator):
         self.output = LatexOutput()
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         super().generate()
-        print("HERE")
 
 
 class DefaultLatexCommandGenerator(CommandGenerator):

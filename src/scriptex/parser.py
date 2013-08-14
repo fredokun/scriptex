@@ -103,7 +103,7 @@ class Parser:
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
-        doc = Document(lex.pos)
+        doc = Document(self.filename, lex.pos)
         
         element_stack = []
 
@@ -226,7 +226,8 @@ class Parser:
         return doc
 
             
-    def parse_from_string(self, input):
+    def parse_from_string(self, input, filename="<string>"):
+        self.filename = filename
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
         lex = lexer.Lexer(tokens, *self.recognizers)
 
@@ -236,5 +237,5 @@ class Parser:
         f = open(filename, "r")
         input = f.read()
         f.close()
-        doc = self.parse_from_string(input)
+        doc = self.parse_from_string(input, filename)
         return doc

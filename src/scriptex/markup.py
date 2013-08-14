@@ -62,8 +62,9 @@ class Text:
         return 'Text("{}")'.format(self.text)
 
 class Preformated:
-    def __init__(self, text, start_pos, end_pos):
+    def __init__(self, text, lang, start_pos, end_pos):
         self.text = text
+        self.lang = lang
         self.start_pos = start_pos
         self.end_pos = end_pos
 
@@ -90,8 +91,9 @@ class Spaces:
         return "Spaces({})".format(len(self.spaces))
 
 class SkipMarkup:
-    def __init__(self):
-        pass
+    def __init__(self, start_pos, end_pos):
+        self.start_pos = start_pos
+        self.end_pos = end_pos
 
     def __repr__(self):
         return "SkipMarkup()"

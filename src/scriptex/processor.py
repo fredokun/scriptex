@@ -59,7 +59,13 @@ class DocumentProcessor:
                         self.cmd_processors[self.markup.cmd_name].enter_command(self, self.markup)
                     if self.markup.preformated:
                         if self.markup.cmd_name in self.cmd_processors:
-                            self.cmd_processors[self.markup.cmd_name].process_command(self, self.markup)
+                            new_content, recursive = self.cmd_processors[self.markup.cmd_name].process_command(self, self.markup)
+                            if new_content is None:
+                                self.source_markup.content[self.source_index] = markup.SkipMarkup(self.markup.start_pos, self.markup.end_pos)
+                            else: # new content
+                                if recursive:
+                                    self.markup_stack.append(new_content, -1, self.source_markup, self.source_index)
+                                self.source_markup.content[self.source_index] = new_content
                     else:
                         self.command_stack.append(self.markup)
                 elif self.markup.markup_type == "environment":
@@ -70,7 +76,7 @@ class DocumentProcessor:
                     if 0 in self.sec_processors:
                         self.sec_processors[0].enter_section(self, self.markup)
                     elif self.markup.section_depth in self.sec_processors:
-                        self.sec_processors[self.markup.section_depth].enter_secton(self, self.markup)
+                        self.sec_processors[self.markup.section_depth].enter_section(self, self.markup)
                     self.section_stack.append(self.markup)
                 if self.markup.markup_type != "command" or not self.markup.preformated:
                     # push back in queue but next time process content at index 0 (first child)
