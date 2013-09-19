@@ -1,13 +1,13 @@
 
-"""Scriptex Code-active processors allow
-to embed python code within scriptex documents.
+"""Tango Code-active processors allow
+to embed python code within tango documents.
 """
 
 import ast
 import pprint
 
-from scriptex.processor import CommandProcessor
-from scriptex import markup
+from tango.processor import CommandProcessor
+from tango import markup
 
 class PythonContext:
     def __init__(self):

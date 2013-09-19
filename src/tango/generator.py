@@ -1,7 +1,7 @@
 """The document generator produces an output document.
 """
 
-from scriptex.markup import Markup, Text, Spaces, Newlines, SkipMarkup
+from tango.markup import Markup, Text, Spaces, Newlines, SkipMarkup
 
 class GenerateError(Exception):
     pass

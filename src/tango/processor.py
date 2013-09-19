@@ -3,7 +3,7 @@ by interpreting commands and/or environments.
 
 """
 
-from scriptex.markup import Markup, Text, Spaces, Newlines, SkipMarkup
+from tango.markup import Markup, Text, Spaces, Newlines, SkipMarkup
 
 class ProcessError(Exception):
     pass

@@ -1,14 +1,14 @@
 
-# the ScripTex frontend
+# the Tango frontend
 
 if __name__ == "__main__":
     import sys
 
-    from scriptex.parser import ScripTexParser
+    from tango.parser import TangoParser
     
     input_file = sys.argv[0]
 
-    parser = ScripTexParser()
+    parser = TangoParser()
 
     ret = parser.parse_from_file(input_file)
     

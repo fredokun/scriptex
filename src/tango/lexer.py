@@ -1,5 +1,5 @@
 '''
-The ScripTeX lexer
+The Tango lexer
 '''
 
 class ParsePosition:

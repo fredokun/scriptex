@@ -8,10 +8,10 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from scriptex.parser import Parser
-from scriptex.processor import DocumentProcessor
-from scriptex.processors import core, codeactive
-from scriptex.generators.latex.article import LatexArticleGenerator
+from tango.parser import Parser
+from tango.processor import DocumentProcessor
+from tango.processors import core, codeactive
+from tango.generators.latex.article import LatexArticleGenerator
 
 class TestExos(unittest.TestCase):
 
@@ -56,7 +56,7 @@ def fact(n):
         
         parser = Parser()
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        doc = parser.parse_from_file("../examples/exosliste.script.tex")
+        doc = parser.parse_from_file("../examples/exosliste.tango.tex")
 
         # 2) processing
         processor = DocumentProcessor(doc)

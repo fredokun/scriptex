@@ -1,8 +1,8 @@
 """Basic latex generator based on document class article.
 """
 
-from scriptex.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
-from scriptex.generator import TextGenerator, SpacesGenerator, NewlinesGenerator
+from tango.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
+from tango.generator import TextGenerator, SpacesGenerator, NewlinesGenerator
 
 class LatexOutput:
     def __init__(self):
@@ -17,8 +17,9 @@ class LatexOutput:
         elif orig_pos == self.last_pos:
             return self.last_pos
         # original position given
+        self.output.append((None, self.output_line, "%%%"))
         self.newline(None)
-        self.output.append((orig_pos, self.output_line, "%%% ScripTex Line: {}".format(orig_pos)))
+        self.output.append((orig_pos, self.output_line, "%%% Tango Line: {}".format(orig_pos)))
         self.newline(None)
         self.last_pos = orig_pos
         return orig_pos
@@ -77,10 +78,10 @@ class DefaultLatexEnvironmentGenerator(EnvironmentGenerator):
     
     def enter_environment(self, generator, env):
         opts_str = "" if env.env_opts is None else "[{}]".format(env.env_opts)
-        generator.output.append(env.start_pos.lpos, "\\begin{{{}}}".format(env.env_name) + opts_str + "\n")
+        generator.output.append(env.start_pos.lpos, "\\begin{{{}}}".format(env.env_name) + opts_str)
 
     def exit_environment(self, generator, env):
-        generator.output.append(env.end_pos.lpos, "\\end{{{}}}\n".format(env.env_name))
+        generator.output.append(env.end_pos.lpos, "\\end{{{}}}".format(env.env_name))
 
 class DefaultLatexSectionGenerator(SectionGenerator):
     def __init__(self):

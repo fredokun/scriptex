@@ -8,7 +8,7 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from scriptex.parser import Parser
+from tango.parser import Parser
 
 class TestLexerString(unittest.TestCase):
     def test_line_comment(self):

@@ -8,8 +8,8 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from scriptex.parser import Parser
-from scriptex.processor import DocumentProcessor, CommandProcessor, EnvironmentProcessor
+from tango.parser import Parser
+from tango.processor import DocumentProcessor, CommandProcessor, EnvironmentProcessor
 
 class TestCommandProcess(unittest.TestCase):
 

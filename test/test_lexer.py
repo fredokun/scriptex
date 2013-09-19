@@ -8,16 +8,16 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-import scriptex
+import tango
 
 
 class TestLexerString(unittest.TestCase):
     def test_emph(self):
-        underscore = scriptex.lexer.Char("underscore", '_')
-        space = scriptex.lexer.CharIn("space", ' ', '\t')
-        word = scriptex.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
+        underscore = tango.lexer.Char("underscore", '_')
+        space = tango.lexer.CharIn("space", ' ', '\t')
+        word = tango.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
 
-        tokens = scriptex.make_string_tokenizer("_example in emphasis_")
+        tokens = tango.make_string_tokenizer("_example in emphasis_")
 
         token = underscore.recognize(tokens)
         self.assertEqual(token.type,'underscore')
@@ -42,7 +42,7 @@ class TestLexerString(unittest.TestCase):
         self.assertEqual(tokens.pos.offset,9)
 
         tokens.reset()
-        lexer = scriptex.lexer.Lexer(tokens, underscore, space, word)
+        lexer = tango.lexer.Lexer(tokens, underscore, space, word)
         token = lexer.next()
         self.assertEqual(token.type, 'underscore')
         token = lexer.next()

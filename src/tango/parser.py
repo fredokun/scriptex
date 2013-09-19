@@ -1,4 +1,4 @@
-"""Oarser.
+"""Tango Parser.
 The objective of the preliminary parsing phase is to
 (try to) uncover the overall structure of the input document.
 
@@ -10,8 +10,8 @@ In particular it handles :
 
 """
 
-import scriptex.lexer as lexer
-from scriptex.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
+import tango.lexer as lexer
+from tango.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
 
 class ParseError(Exception):
     pass

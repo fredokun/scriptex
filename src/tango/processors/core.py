@@ -2,8 +2,8 @@
 
 """
 
-from scriptex.processor import CommandProcessor
-from scriptex.markup import SkipMarkup
+from tango.processor import CommandProcessor
+from tango.markup import SkipMarkup
 
 class TitleProcessor(CommandProcessor):
     def __init__(self):
@@ -11,7 +11,7 @@ class TitleProcessor(CommandProcessor):
 
     def process_command(self, processor, cmd):
         processor.document.title = cmd
-        return (SkipMarkup(), False) # XXX: we use "" to remove a command from the source
+        return (SkipMarkup(cmd.start_pos, cmd.end_pos), False) # XXX: we use "" to remove a command from the source
 
 class AuthorProcessor(CommandProcessor):
     def __init__(self):
@@ -19,7 +19,7 @@ class AuthorProcessor(CommandProcessor):
 
     def process_command(self, processor, cmd):
         processor.document.author = cmd
-        return (SkipMarkup(), False)
+        return (SkipMarkup(cmd.start_pos, cmd.end_pos), False)
 
 class DateProcessor(CommandProcessor):
     def __init__(self):
@@ -27,8 +27,7 @@ class DateProcessor(CommandProcessor):
 
     def process_command(self, processor, cmd):
         processor.document.author = cmd
-        return (SkipMarkup(), False)
-
+        return (SkipMarkup(cmd.start_pos, cmd.end_pos), False)
 
 def register_core_processors(processor):
     processor.register_command_processor("title", TitleProcessor())
