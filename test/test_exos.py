@@ -17,7 +17,7 @@ class TestExos(unittest.TestCase):
 
     def test_eval_python(self):
         parser = Parser()
-        doc = parser.parse_from_string(""""
+        doc = parser.parse_from_string("""
 \evalPython{{{3+2}}}
 """)
 
@@ -32,7 +32,7 @@ class TestExos(unittest.TestCase):
 
     def test_def_python(self):
         parser = Parser()
-        doc = parser.parse_from_string(""""
+        doc = parser.parse_from_string("""
 \defPython[fact]{{{
 def fact(n):
     return 1 if n<=1 else n*fact(n-1)
@@ -41,14 +41,14 @@ def fact(n):
 \evalPython{{{3+fact(4)}}}
 """)
 
-        print("Before processing = \n" + str(doc));
+        #print("Before processing = \n" + str(doc));
 
         process = DocumentProcessor(doc)
         py_ctx = codeactive.PythonContext()
         codeactive.register_processors(process, py_ctx)
         process.process()
 
-        print("After processing = \n" + str(doc));
+        #print("After processing = \n" + str(doc));
         
     
     def test_exos_liste(self):
@@ -63,11 +63,13 @@ def fact(n):
         core.register_core_processors(processor)
         processor.process()
 
+        print("After process = \n" + str(doc.toxml()))
+
         # 3) generating
         generator = LatexArticleGenerator(doc)
         generator.generate()
 
-        # print("Output =\n" + str(generator.output))
+        #print("Output =\n" + str(generator.output))
         
         
 if __name__ == '__main__':
