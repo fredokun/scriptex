@@ -61,9 +61,16 @@ def fact(n):
         # 2) processing
         processor = DocumentProcessor(doc)
         core.register_core_processors(processor)
-        processor.process()
+        py_ctx = codeactive.PythonContext()
+        codeactive.register_processors(processor, py_ctx)
 
-        print("After process = \n" + str(doc.toxml()))
+        try:
+            processor.process()
+        except codeactive.CheckPythonFailure:
+            print("CheckPython failed, aborpting ...")
+            return
+
+        print("After process = \n" + str(doc))
 
         # 3) generating
         generator = LatexArticleGenerator(doc)

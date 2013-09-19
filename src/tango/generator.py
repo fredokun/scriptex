@@ -1,7 +1,7 @@
 """The document generator produces an output document.
 """
 
-from tango.markup import Markup, Text, Spaces, Newlines, SkipMarkup
+from tango.markup import Markup, Text, Preformated, Spaces, Newlines, SkipMarkup
 
 class GenerateError(Exception):
     pass
@@ -117,6 +117,9 @@ class DocumentGenerator:
                     elif isinstance(child, Text):
                         if self.text_generator is not None:
                             self.text_generator.on_text(self, child)
+                    elif isinstance(child, Preformated):
+                        if self.preformated_generator is not None:
+                            self.preformated_generator.on_preformated(self, child)
                     elif isinstance(child, Spaces):
                         if self.spaces_generator is not None:
                             self.spaces_generator.on_spaces(self, child)
@@ -170,6 +173,13 @@ class TextGenerator:
         pass
 
     def on_text(self, generator, text):
+        pass
+
+class PreformatedGenerator:
+    def __init__(self):
+        pass
+
+    def on_preformated(self, generator, preformated):
         pass
 
 class SpacesGenerator:

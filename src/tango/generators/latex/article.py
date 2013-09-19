@@ -2,7 +2,7 @@
 """
 
 from tango.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
-from tango.generator import TextGenerator, SpacesGenerator, NewlinesGenerator
+from tango.generator import TextGenerator, PreformatedGenerator, SpacesGenerator, NewlinesGenerator
 
 class LatexOutput:
     def __init__(self):
@@ -47,6 +47,7 @@ class LatexArticleGenerator(DocumentGenerator):
         self.default_environment_generator = DefaultLatexEnvironmentGenerator()
         self.default_section_generator = DefaultLatexSectionGenerator()
         self.text_generator = LatexTextGenerator()
+        self.preformated_generator = LatexPreformatedGenerator()
         self.spaces_generator = LatexSpacesGenerator()
         self.newlines_generator = LatexNewlinesGenerator()
         
@@ -94,6 +95,14 @@ class DefaultLatexSectionGenerator(SectionGenerator):
         pass
 
 class LatexTextGenerator(TextGenerator):
+    def __init__(self):
+        pass
+
+    def on_text(self, generator, text):
+        generator.output.append(text.start_pos.lpos, text.text)
+        # TODO:  escape strings for latex output
+
+class LatexPreformatedGenerator(PreformatedGenerator):
     def __init__(self):
         pass
 

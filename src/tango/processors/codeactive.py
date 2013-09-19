@@ -4,6 +4,7 @@ to embed python code within tango documents.
 """
 
 import ast
+import doctest
 import pprint
 
 from tango.processor import CommandProcessor
@@ -60,7 +61,38 @@ class DefPythonProcessor(CommandProcessor):
         # TODO: log the registered function
         return (markup.SkipMarkup(cmd.start_pos, cmd.end_pos), False)
         
-    
+class CheckPythonProcessor(CommandProcessor):
+    def __init__(self, python_context):
+        super().__init__()
+        self.python_context = python_context
+
+    def process_command(self, processor, cmd):
+        test_parser = doctest.DocTestParser()
+        test = test_parser.get_doctest(cmd.content, self.python_context.globals, "<checkPython>", processor.document.filename, cmd.header_end_pos.lpos)
+        runner = CheckPythonRunner()
+        runner.run(test)
+        # XXX : for the moment an exception should be launched, think about different behaviors
+        # if we are here then everything went fine (?)
+        if cmd.cmd_opts == "hide":
+            return (markup.SkipMarkup(cmd.start_pos, cmd.end_pos), False)
+        else:
+            return (markup.Preformated(cmd.content, "python-3", cmd.start_pos, cmd.end_pos), False)
+
+
+class CheckPythonFailure(Exception):
+    pass
+
+class CheckPythonRunner(doctest.DocTestRunner):
+    def __init__(self):
+        super().__init__()
+
+
+    def report_failure(self, out, test, example, got):
+        super().report_failure(out, test, example, got)
+        raise CheckPythonFailure()
+
 def register_processors(processor, python_context):
     processor.register_command_processor("evalPython", EvalPythonProcessor(python_context))
     processor.register_command_processor("defPython", DefPythonProcessor(python_context))
+    processor.register_command_processor("checkPython", CheckPythonProcessor(python_context))
+
