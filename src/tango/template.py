@@ -1,6 +1,8 @@
 
 # a stupid template engine
 
+import ast
+
 class TemplateCompileError(Exception):
     def __init__(self, msg, template, start_pos, end_pos):
         super().__init__(msg)
@@ -41,6 +43,7 @@ class Template:
                  safe_mode=False, 
                  escape_var="$", escape_inline="%", escape_block="%", escape_block_open="{", escape_block_close="}",
                  escape_emit_function="emit",
+                 filename='<unknown>',
                  base_line_pos=0):
         self.template = template
         self.escape_var = escape_var
@@ -52,20 +55,22 @@ class Template:
         self.escape_emit_function = escape_emit_function
         self.safe_mode = safe_mode
         self.ctemplate = None
+        self.filename = filename
 
-    @property
-    def global_env():
+    def global_env(self):
+        genv = None
         if self.safe_mode:
-            return dict()
+            genv = dict()
         else:
-            return globals()
+            genv = globals().copy()
+
+        return genv
 
 
     def _install_render_env(self, env):
         global ___Template_emit_function___
 
         renv = env.copy()
-        renv['___Template_render_string___'] = ""
         renv[self.escape_emit_function] = ___Template_emit_function___
         
         return renv
@@ -234,16 +239,34 @@ class Template:
             self.inline_code = inline_code
 
         def render(self, env):
-            renv = self._install_render_env(env)
-            exec(self.template.global_env, renv)
+
+            genv = self.template.global_env()
+            renv = self.template._install_render_env(env)
+            
+            Template.___Template_render_string___ = StringBuffer()
+            exec(self.inline_code, genv, renv)
+            #print("Rendered = {}".format(Template.___Template_render_string___.contents))
+            return Template.___Template_render_string___.contents
 
         def __repr__(self):
             return 'Template.Inline({}, start_pos={}, end_pos={})'.format(self.inline_code, self.start_pos, self.end_pos)
 
-            
 
-def ___Template_emit_function___(self, msg):
-    ___Template_render_string___ += msg
+class StringBuffer:
+    def __init__(self):
+        self.contents = ""
+
+    def reset(self):
+        self.contents=""
+
+    def append(self,msg):
+        self.contents += msg
+            
+def ___Template_emit_function___(msg):
+    #print(">>> EMIT: {}".format(msg))
+    Template.___Template_render_string___.append(msg)
+
+    #print(">>>> HERE: {}".format(___Template_render_string___))
 
 if __name__ == "__main__":
     t1 = Template(\
