@@ -1,8 +1,6 @@
 
 # a stupid template engine
 
-from .lexer import ParsePosition
-
 class TemplateCompileError(Exception):
     def __init__(self, msg, template, start_pos, end_pos):
         super().__init__(msg)
@@ -16,16 +14,44 @@ class TemplateRenderError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
+class Position:
+    def __init__(self, line_pos=1, char_pos=1, offset=0):
+        self.line_pos = line_pos
+        self.char_pos = char_pos
+        self.offset = offset
+
+    def next_char(self):
+        return Position(self.line_pos, self.char_pos + 1, self.offset + 1)
+
+    def prev_char(self):
+        return Position(self.line_pos, self.char_pos - 1, self.offset - 1)
+
+    def next_line(self):
+        return Position(self.line_pos + 1, 1, self.offset + 1)
+
+    def __repr__(self):
+        return "Position(line_pos={}, char_pos={}, offset={})".format(self.line_pos, self.char_pos, self.offset)
+
+    def __str__(self):
+        return repr(self)
+
 class Template:
-    def __init__(self, template, safe_mode=False, escape_var="$", escape_inline="%" escape_block="%", escape_block_open="{", escape_block_close="}", base_line_pos=0):
+    def __init__(self, 
+                 template, 
+                 safe_mode=False, 
+                 escape_var="$", escape_inline="%", escape_block="%", escape_block_open="{", escape_block_close="}",
+                 escape_emit_function="emit",
+                 base_line_pos=0):
         self.template = template
         self.escape_var = escape_var
         self.escape_inline = escape_inline
-        self.escace_block = escape_block
+        self.escape_block = escape_block
         self.escape_block_open = escape_block_open
         self.escape_block_close = escape_block_close
         self.base_line_pos = base_line_pos
+        self.escape_emit_function = escape_emit_function
         self.safe_mode = safe_mode
+        self.ctemplate = None
 
     @property
     def global_env():
@@ -35,15 +61,25 @@ class Template:
             return globals()
 
 
-    @classmethod
-    def _install_render_env(env):
+    def _install_render_env(self, env):
         global ___Template_emit_function___
 
         renv = env.copy()
         renv['___Template_render_string___'] = ""
-        renv['emit'] = ___Template_emit_function___
+        renv[self.escape_emit_function] = ___Template_emit_function___
         
+        return renv
             
+    def render(self, env):
+        if self.ctemplate is None:
+            raise TemplateRenderError("Template not compiled")
+
+        ret = ""
+        for element in self.ctemplate:
+            ret += element.render(env)
+
+        return ret
+
     def compile(self):
         len_template = len(self.template)
         self.ctemplate = []
@@ -53,27 +89,27 @@ class Template:
 
         part = ""
         while current_pos.offset < len_template:
-            current_char = selt.template[current_pos.offset]
+            current_char = self.template[current_pos.offset]
             if current_char == '\n':
                 current_pos = current_pos.next_line()
                 part += current_char
-            elif current_char == self.escape_var and offset + 1 < len_template \
-                 and self.template[offset+1] != self.escape_var:
+            elif current_char == self.escape_var and current_pos.offset + 1 < len_template \
+                 and self.template[current_pos.offset+1] != self.escape_var:
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
                 start_pos = self._parse_variable(start_pos)
                 current_pos = start_pos
-            elif current_char == self.escape_inline and (offset + 1 >= len_template \
-                 or (self.template[offset+1] != self.escape_inline \
-                 and self.template[offset+1] != self.escape_block_open)):
+            elif current_char == self.escape_inline and (current_pos.offset + 1 >= len_template \
+                 or (self.template[current_pos.offset+1] != self.escape_inline \
+                 and self.template[current_pos.offset+1] != self.escape_block_open)):
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
                 start_pos = self._parse_escape_inline(start_pos)
                 current_pos = start_pos
-            elif current_char == self.escape_block and (offset + 1 >= len_template \
-                 or self.template[offset+1] == self.escape_block_open):
+            elif current_char == self.escape_block and (current_pos.offset + 1 >= len_template \
+                 or self.template[current_pos.offset+1] == self.escape_block_open):
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
@@ -111,12 +147,21 @@ class Template:
                     continue_parse = False
 
         # end of while
-        if not ident.isidentifier():
-            raise TemplateCompileError("Not a variable identifier: {}".format(ident), self.template, start_pos, end_pos)
+        ident_prefix = ident
+        prefix_pos = current_pos
+        while ident_prefix != "" and not ident_prefix.isidentifier():
+            ident_prefix = ident_prefix[:-1]
+            prefix_pos = prefix_pos.prev_char()
 
-        self.ctemplate.append(Template.Variable(self, ident, start_pos, end_pos))
+        if ident_prefix == "":
+            raise TemplateCompileError("Not a variable identifier: '{}'".format(ident), self.template, start_pos, current_pos)
 
-        return end_pos
+        ident = ident_prefix
+        current_pos = prefix_pos
+
+        self.ctemplate.append(Template.Variable(self, ident, start_pos, current_pos))
+
+        return current_pos
 
     def _parse_escape_inline(self, start_pos):
         assert self.template[start_pos.offset] == self.escape_inline
@@ -158,7 +203,7 @@ class Template:
             self.start_pos = start_pos
             self.end_pos = end_pos
 
-    class Literal(Template.Element):
+    class Literal(Element):
         def __init__(self, template, literal, start_pos, end_pos):
             super().__init__(template, "literal", start_pos, end_pos)
             self.literal = literal
@@ -166,7 +211,10 @@ class Template:
         def render(self, env):
             return self.literal
 
-    class Variable(Template.Element):
+        def __repr__(self):
+            return 'Template.Literal("{}", start_pos={}, end_pos={})'.format(self.literal, self.start_pos, self.end_pos)
+
+    class Variable(Element):
         def __init__(self, template, variable, start_pos, end_pos):
             super().__init__(template, "variable", start_pos, end_pos)
             self.variable = variable
@@ -176,20 +224,26 @@ class Template:
                 raise TemplateRenderError("Variable '{}' not bound".format(self.variable), self.template, self.start_pos, self.end_pos)
             return "{}".format(env[self.variable])
 
-    class Inline(Template.Element):
+        def __repr__(self):
+            return 'Template.Variable(${}, start_pos={}, end_pos={})'.format(self.variable, self.start_pos, self.end_pos)
+
+
+    class Inline(Element):
         def __init__(self, template, inline_code, start_pos, end_pos):
             super().__init__(template, "inline", start_pos, end_pos)
             self.inline_code = inline_code
 
         def render(self, env):
-            renv = Template._install_render_env(env)
+            renv = self._install_render_env(env)
             exec(self.template.global_env, renv)
-            
+
+        def __repr__(self):
+            return 'Template.Inline({}, start_pos={}, end_pos={})'.format(self.inline_code, self.start_pos, self.end_pos)
+
             
 
 def ___Template_emit_function___(self, msg):
     ___Template_render_string___ += msg
-
 
 if __name__ == "__main__":
     t1 = Template(\
