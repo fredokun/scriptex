@@ -29,7 +29,19 @@ class TestBasicTemplates(unittest.TestCase):
         print(ret)
 
     def test_inline_escape_var(self):
-        template = Template("""The value of myvar is '%emit("{}".format(myvar))%' that's it...""")
+        template = Template(
+            """The value of myvar is '%emit("{}".format(myvar))%' with inline escape char '%%'
+            and that's it...""")
+        template.compile()
+        #print(template.ctemplate)
+        myvar = 42
+        ret = template.render(locals())
+        print(ret)
+
+    def test_alt_inline_escape_var(self):
+        template = Template(
+            """The value of myvar is '$emit("{}".format(myvar))$' with inline escape char '$$'
+            and that's it...""", escape_var="?", escape_inline="$")
         template.compile()
         #print(template.ctemplate)
         myvar = 42

@@ -45,6 +45,13 @@ class Template:
                  escape_emit_function="emit",
                  filename='<unknown>',
                  base_line_pos=0):
+        assert escape_var != escape_inline, "Require distinct escape variable"
+        assert escape_var != escape_block, "Require distinct escape variable"
+        assert escape_block_open != escape_inline, "Require distinct escape block open"
+        assert escape_block_close != escape_inline, "Require distinct escape block close"
+        assert escape_block_open != escape_block, "Require distinct escape block open"
+        assert escape_block_close != escape_block, "Require distinct escape block close"
+
         self.template = template
         self.escape_var = escape_var
         self.escape_inline = escape_inline
@@ -123,6 +130,9 @@ class Template:
             else: # a literal character
                 part += current_char
                 current_pos = current_pos.next_char()
+                if current_char in { self.escape_var, self.escape_inline, self.escape_block, self.escape_block_open, self.escape_block_close }:
+                    current_pos = current_pos.next_char() # protected escape
+
         # end of while
         if part != "":
             self._register_literal(part, start_pos, current_pos)
@@ -179,7 +189,7 @@ class Template:
         while continue_parse:
             if current_pos.offset >= len_template:
                 raise TemplateCompileError("Unexpected end of template within inline block (missing closing {})".format(self.escape_inline),
-                                           self.template, start_pos, end_pos)
+                                           self.template, start_pos, current_pos)
             current_char = self.template[current_pos.offset]
             if current_char == self.escape_inline and (current_pos.offset + 1 >= len_template \
                                                        or self.template[current_pos.offset+1] != self.escape_inline):
