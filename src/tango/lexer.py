@@ -473,7 +473,11 @@ class Lexer:
         return None
                 
     def __next__(self):
-        return self.next_token(token_type=None)
+        tok =  self.next_token()
+        if tok is None:
+            raise StopIteration()
+        else:
+            return tok
         
     def putback(self, token):
         """Put back a token in the lexer.
@@ -490,7 +494,7 @@ class Lexer:
         return self.tokenizer.at_eof()
 
     def __iter__(self):
-        return (self)
+        return self
             
 def make_file_tokenizer(filename):
     pass
