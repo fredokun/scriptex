@@ -47,6 +47,16 @@ class TestBasicTemplates(unittest.TestCase):
         myvar = 42
         ret = template.render(locals())
         print(ret)
+
+    def test_block_escape_var(self):
+        template = Template(
+            """The value of myvar is '%{emit("{}".format(myvar))%}' with block escape char '%%'
+            and that's it...""")
+        template.compile()
+        #print(template.ctemplate)
+        myvar = 42
+        ret = template.render(locals())
+        print(ret)
         
 
 if __name__ == '__main__':

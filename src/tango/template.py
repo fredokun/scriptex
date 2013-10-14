@@ -211,6 +211,42 @@ class Template:
 
         return current_pos
 
+    def _parse_escape_block(self, start_pos):
+        assert self.template[start_pos.offset] == self.escape_block
+        assert self.template[start_pos.offset + 1] == self.escape_block_open
+        
+        len_template = len(self.template)
+
+        current_pos = start_pos.next_char().next_char()
+        block_code = ""
+        continue_parse = True
+        while continue_parse:
+            if current_pos.offset >= len_template:
+                raise TemplateCompileError("Unexpected end of template within block block (missing closing {}{})".format(self.escape_block, self.escape_block_close),
+                                           self.template, start_pos, current_pos)
+            current_char = self.template[current_pos.offset]
+            if current_char == self.escape_block \
+            and (current_pos.offset + 1 < len_template \
+                 and self.template[current_pos.offset+1] == self.escape_block_close):
+                # end of block block
+                current_pos = current_pos.next_char().next_char()
+                continue_parse = False
+            else:
+                block_code += current_char
+                current_pos = current_pos.next_char()
+        # end of while
+        compiled_block = block_code  # TODO:  compile !
+
+        parsed_block = ast.parse(block_code, self.filename, 'exec')
+        ast.increment_lineno(parsed_block, start_pos.line_pos)
+
+        compiled_block = compile(parsed_block, self.filename, 'exec')
+
+        self.ctemplate.append(Template.Block(self, compiled_block, start_pos, current_pos))
+
+        return current_pos
+
+
     class Element:
         def __init__(self, template, kind, start_pos, end_pos):
             self.template = template
@@ -260,6 +296,32 @@ class Template:
 
         def __repr__(self):
             return 'Template.Inline({}, start_pos={}, end_pos={})'.format(self.inline_code, self.start_pos, self.end_pos)
+
+    class Block(Element):
+        def __init__(self, template, block_code, start_pos, end_pos):
+            super().__init__(template, "block", start_pos, end_pos)
+            self.block_code = block_code
+            self.start_col = start_pos.char_pos
+
+        def render(self, env):
+
+            genv = self.template.global_env()
+            renv = self.template._install_render_env(env)
+            
+            Template.___Template_render_string___ = StringBuffer()
+            exec(self.block_code, genv, renv)
+            #print("Rendered = {}".format(Template.___Template_render_string___.contents))
+            
+            render_str = Template.___Template_render_string___.contents
+            if self.start_col > 1:
+                indent_str = " " * (self.start_col - 1)
+                render_str = indent_str.join(render_str.splitlines(True))
+
+            return render_str
+
+        def __repr__(self):
+            return 'Template.Block({}, stat_col={}, start_pos={}, end_pos={})'.format(self.block_code, self.start_col, self.start_pos, self.end_pos)
+
 
 
 class StringBuffer:
