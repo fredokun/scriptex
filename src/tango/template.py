@@ -202,10 +202,10 @@ class Template:
         # end of while
         compiled_inline = inline_code  # TODO:  compile !
 
-        parsed_inline = ast.parse(inline_code, self.filename, 'exec')
+        parsed_inline = ast.parse(inline_code, self.filename, 'eval')
         ast.increment_lineno(parsed_inline, start_pos.line_pos)
 
-        compiled_inline = compile(parsed_inline, self.filename, 'exec')
+        compiled_inline = compile(parsed_inline, self.filename, 'eval')
 
         self.ctemplate.append(Template.Inline(self, compiled_inline, start_pos, current_pos))
 
@@ -289,10 +289,9 @@ class Template:
             genv = self.template.global_env()
             renv = self.template._install_render_env(env)
             
-            Template.___Template_render_string___ = StringBuffer()
-            exec(self.inline_code, genv, renv)
-            #print("Rendered = {}".format(Template.___Template_render_string___.contents))
-            return Template.___Template_render_string___.contents
+            ret = eval(self.inline_code, genv, renv)
+
+            return "{}".format(ret)
 
         def __repr__(self):
             return 'Template.Inline({}, start_pos={}, end_pos={})'.format(self.inline_code, self.start_pos, self.end_pos)
