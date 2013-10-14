@@ -8,8 +8,8 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-import tango
-from tango.template import Template
+import tangolib
+from tangolib.template import Template
 
 class TestBasicTemplates(unittest.TestCase):
     def test_variable_escape(self):

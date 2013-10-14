@@ -8,10 +8,10 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from tango.parser import Parser
-from tango.processor import DocumentProcessor
-from tango.processors import core, codeactive
-from tango.generators.latex.article import LatexArticleGenerator
+from tangolib.parser import Parser
+from tangolib.processor import DocumentProcessor
+from tangolib.processors import core, codeactive
+from tangolib.generators.latex.article import LatexArticleGenerator
 
 class TestExos(unittest.TestCase):
 

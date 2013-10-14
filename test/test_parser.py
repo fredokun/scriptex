@@ -8,7 +8,7 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from tango.parser import Parser
+from tangolib.parser import Parser
 
 class TestLexerString(unittest.TestCase):
     def test_line_comment(self):
@@ -135,7 +135,7 @@ text (in parentheses)
         parser = Parser()
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        ret = parser.parse_from_file("../examples/basic.scrip.tex")
+        ret = parser.parse_from_file("../examples/basic.tango.tex")
 
         print(ret)
 

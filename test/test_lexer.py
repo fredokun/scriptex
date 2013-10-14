@@ -8,16 +8,16 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-import tango
-from tango.lexer import Char, CharIn, Regexp, make_string_tokenizer
+import tangolib
+from tangolib.lexer import Char, CharIn, Regexp, make_string_tokenizer
 
 class TestLexerString(unittest.TestCase):
     def test_emph(self):
-        underscore = tango.lexer.Char("underscore", '_')
-        space = tango.lexer.CharIn("space", ' ', '\t')
-        word = tango.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
+        underscore = tangolib.lexer.Char("underscore", '_')
+        space = tangolib.lexer.CharIn("space", ' ', '\t')
+        word = tangolib.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
 
-        tokens = tango.lexer.make_string_tokenizer("_example in emphasis_")
+        tokens = tangolib.lexer.make_string_tokenizer("_example in emphasis_")
 
         token = underscore.recognize(tokens)
         self.assertEqual(token.token_type,'underscore')
@@ -42,7 +42,7 @@ class TestLexerString(unittest.TestCase):
         self.assertEqual(tokens.pos.offset,9)
 
         tokens.reset()
-        lexer = tango.lexer.Lexer(tokens, underscore, space, word)
+        lexer = tangolib.lexer.Lexer(tokens, underscore, space, word)
         token = lexer.next_token()
         self.assertEqual(token.token_type, 'underscore')
         token = lexer.next_token()

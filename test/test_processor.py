@@ -8,8 +8,8 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../src")
 
-from tango.parser import Parser
-from tango.processor import DocumentProcessor, CommandProcessor, EnvironmentProcessor
+from tangolib.parser import Parser
+from tangolib.processor import DocumentProcessor, CommandProcessor, EnvironmentProcessor
 
 class TestCommandProcess(unittest.TestCase):
 
@@ -23,7 +23,7 @@ class TestCommandProcess(unittest.TestCase):
     def test_count_item(self):
         parser = Parser()
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        doc = parser.parse_from_file("../examples/basic.scrip.tex")
+        doc = parser.parse_from_file("../examples/basic.tango.tex")
 
         processor = DocumentProcessor(doc)
 
