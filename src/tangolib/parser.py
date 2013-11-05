@@ -10,6 +10,8 @@ In particular it handles :
 
 """
 
+import re
+
 import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
 
@@ -170,7 +172,7 @@ class Parser:
                     unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
-                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformasted=True)
+                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
                 current_element.append(cmd)
                 preformated = ""
                 eat_preformated = True
@@ -196,7 +198,7 @@ class Parser:
                     section_title = tok.value.group(2)
                     section_depth = len(tok.value.group(1))
                     if tok.value.group(3) != "" and tok.value.group(3) != tok.value.group(1):
-                        raise ParseError(tok.start_pos.next_char(tok.value.start(3)), tok.start_pos.next_char(tok.value.end(3), 'Wrong section marker: should be "" or "{}"'.format(tok.value.group(1)))
+                        raise ParseError(tok.start_pos.next_char(tok.value.start(3)), tok.start_pos.next_char(tok.value.end(3)), 'Wrong section marker: should be "" or "{}"'.format(tok.value.group(1)))
                     if tok.value.group(4) != "" and not tok.value.group(4).isspace():
                         raise ParseError(tok.start_pos.next_char(tok.value.start(4)), tok.start_pos.next_char(tok.value.end(3)), "Unexpected text '{}' after section markup".format(tok.value.group(4)))
 

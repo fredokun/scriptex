@@ -138,6 +138,40 @@ text (in parentheses)
         ret = parser.parse_from_file("../examples/basic.tango.tex")
 
         print(ret)
+        
+    def test_section_simple(self):
+        parser = Parser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_string(r"""
+
+\section{section 1}
+
+this is in section \emph{section 1} 
+
+\subsection{subsection 1.1} 
+
+this is in section \emph{subsection 1.1} 
+
+\subsection{subsection 1.2} 
+
+this is in section \emph{subsection 1.2}
+
+\section{section 2} 
+
+this is in section \emph{section 2} 
+
+\subsection{subsection 2.1} 
+
+this is in section \emph{subsection 2.1} 
+
+\subsection{subsection 2.2} 
+
+this is in section \emph{subsection 2.2}
+
+""")
+
+        print("doc 7 = {}".format(ret))
 
         
 if __name__ == '__main__':
