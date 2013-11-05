@@ -66,6 +66,8 @@ class Parser:
         self.recognizers.append(lexer.Regexp("env_footer", r"\\end{([^}]+)}"))
         self.recognizers.append(lexer.Regexp("section", r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}"))
         self.recognizers.append(lexer.Regexp("mdsection", r"^(=+)\s+([^=]+)\s+(=*)(.*)$", re_flags=re.MULTILINE))
+        # markdown lists (re hack !)
+        self.recognizers.append(lexer.Regexp("mdlist", r"^(\s)$(?:^(\s+)\-(.+)$)+", re_flags=re.MULTILINE))
         self.recognizers.append(lexer.Regexp("cmd_pre_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?{{{"))
         self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?"))
         self.recognizers.append(lexer.Char("open_curly", '{'))
