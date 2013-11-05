@@ -172,6 +172,45 @@ this is in section \emph{subsection 2.2}
 """)
 
         print("doc 7 = {}".format(ret))
+        
+        # TODO: validate the result
+
+    def test_mdsection_simple(self):
+        parser = Parser()
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        ret = parser.parse_from_string(r"""
+
+= section 1 =
+
+this is in section \emph{section 1} 
+
+== subsection 1.1 ==
+
+this is in section \emph{subsection 1.1} 
+
+== subsection 1.2 ==
+
+this is in section \emph{subsection 1.2}
+
+= section 2 = 
+
+this is in section \emph{section 2} 
+
+== subsection 2.1 ==
+
+this is in section \emph{subsection 2.1} 
+
+== subsection 2.2 ==
+
+this is in section \emph{subsection 2.2}
+
+""")
+
+        print("doc 8 = {}".format(ret))
+        
+        # TODO: validate the result
+
 
         
 if __name__ == '__main__':
