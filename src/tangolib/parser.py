@@ -73,9 +73,9 @@ REGEX_CMD_HEADER = ere.ERegex(r"\\(" + REGEX_IDENT_STR + r")(?:\[([^\]]+)\])?")
 REGEX_SPACE_STR = r"[^\S\n\f\r]"
 REGEX_SPACE = ere.ERegex(REGEX_SPACE_STR)
 
-REGEX_MDLIST_OPEN = ere.ERegex("^{0}*\\n({0}+)([-+*\\d](?:\\.?))".format(REGEX_SPACE_STR))
-REGEX_MDLIST_CLOSE = ere.ERegex("^{}*$".format(REGEX_SPACE_STR))
-REGEX_MDLIST_ITEM = ere.ERegex("^({}+)([-+*\\d](?:\\.?))")
+REGEX_MDLIST_OPEN = ere.ERegex("(?:^{0}*\\n)+({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
+REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n(?={0}+(?:[-+*\\d](?:\\.)?))".format(REGEX_SPACE_STR))
+REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
 
 # main parser class
 
@@ -95,9 +95,8 @@ class Parser:
 
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
-        self.recognizers.append(lexer.Regexp("mdlist_close", REGEX_MDLIST_CLOSE, re_flags=ere.MULTILINE))
-        self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM))
-
+        self.recognizers.append(lexer.Regexp("mdlist_item_last", REGEX_MDLIST_ITEM_LAST, re_flags=ere.MULTILINE))
+        self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM, re_flags=ere.MULTILINE))
 
         self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
         self.recognizers.append(lexer.Regexp("cmd_header", REGEX_CMD_HEADER))
@@ -112,7 +111,7 @@ class Parser:
             self.start_pos = None
             self.end_pos = None
 
-        def append_char(self, lexer,):
+        def append_char(self, lexer):
             if self.start_pos is None:
                 self.start_pos = lexer.pos
             self.content += lexer.next_char()
