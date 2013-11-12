@@ -10,7 +10,7 @@ In particular it handles :
 
 """
 
-import re
+import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
@@ -51,29 +51,60 @@ def section_of_depth(section_depth):
     else:
         raise ValueError("Not a valid section depth: {}".format(section_depth))
     
+
+# extended regular expressions constants
+
+REGEX_IDENT_STR = r"[a-zA-Z_][a-zA-Z_0-9]*"
+
+REGEX_PROTECTED = ere.ERegex(r"\\{|\\}") 
+
+#import pdb ; pdb.set_trace()
+REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.str_end()
+
+REGEX_ENV_HEADER = ere.ERegex(r"\\begin{([^}]+)}(?:\[([^\]]+)\])?")
+REGEX_ENV_FOOTER = ere.ERegex(r"\\end{([^}]+)}")
+
+REGEX_SECTION = ere.ERegex(r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}")
+REGEX_MDSECTION = ere.ERegex(r"^(=+)\s+([^=]+)\s+(=*)(.*)$")
+
+REGEX_CMD_PRE_HEADER = ere.ERegex(r"\\(" + REGEX_IDENT_STR + r")(?:\[([^\]]+)\])?{{{")
+REGEX_CMD_HEADER = ere.ERegex(r"\\(" + REGEX_IDENT_STR + r")(?:\[([^\]]+)\])?")
+
+REGEX_SPACE_STR = r"[^\S\n\f\r]"
+REGEX_SPACE = ere.ERegex(REGEX_SPACE_STR)
+
+REGEX_MDLIST_OPEN = ere.ERegex("^{0}*\\n({0}+)([-+*\\d](?:\\.?))".format(REGEX_SPACE_STR))
+REGEX_MDLIST_CLOSE = ere.ERegex("^{}*$".format(REGEX_SPACE_STR))
+REGEX_MDLIST_ITEM = ere.ERegex("^({}+)([-+*\\d](?:\\.?))")
+
+# main parser class
+
 class Parser:
     def __init__(self):
         self.recognizers = []
         self.prepare_recognizers()
 
     def prepare_recognizers(self):
-        ident_re = r"[a-zA-Z_][a-zA-Z_0-9]*"
-
-        self.recognizers.append(lexer.Regexp("protected", r"\\{|\\}"))
+        self.recognizers.append(lexer.Regexp("protected", REGEX_PROTECTED))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
-        self.recognizers.append(lexer.Regexp("line_comment", r"\%.*$"))
-        self.recognizers.append(lexer.Regexp("env_header", r"\\begin{([^}]+)}(?:\[([^\]]+)\])?"))
-        self.recognizers.append(lexer.Regexp("env_footer", r"\\end{([^}]+)}"))
-        self.recognizers.append(lexer.Regexp("section", r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}"))
-        self.recognizers.append(lexer.Regexp("mdsection", r"^(=+)\s+([^=]+)\s+(=*)(.*)$", re_flags=re.MULTILINE))
-        # markdown lists (re hack !)
-        self.recognizers.append(lexer.Regexp("mdlist", r"^(\s)$(?:^(\s+)\-(.+)$)+", re_flags=re.MULTILINE))
-        self.recognizers.append(lexer.Regexp("cmd_pre_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?{{{"))
-        self.recognizers.append(lexer.Regexp("cmd_header", r"\\(" + ident_re + r")(?:\[([^\]]+)\])?"))
+        self.recognizers.append(lexer.Regexp("line_comment", REGEX_LINE_COMMENT))
+        self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
+        self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
+        self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
+        self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
+
+        # markdown lists
+        self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
+        self.recognizers.append(lexer.Regexp("mdlist_close", REGEX_MDLIST_CLOSE, re_flags=ere.MULTILINE))
+        self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM))
+
+
+        self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
+        self.recognizers.append(lexer.Regexp("cmd_header", REGEX_CMD_HEADER))
         self.recognizers.append(lexer.Char("open_curly", '{'))
         self.recognizers.append(lexer.Char("close_curly", '}'))
         self.recognizers.append(lexer.CharIn("newline", "\n", "\r"))
-        self.recognizers.append(lexer.Regexp("spaces", r"[ \t]+"))
+        self.recognizers.append(lexer.Regexp("spaces", REGEX_SPACES))
 
     class UnparsedContent:
         def __init__(self):

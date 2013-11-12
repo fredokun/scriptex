@@ -154,11 +154,10 @@ class Literal(Recognizer):
         return "'{}'::{}".format(self.literal, self.token_type)
 
 class Regexp(Recognizer):
-    def __init__(self, token_type, regexp, re_flags=0):
+    def __init__(self, token_type, regex, re_flags=0):
         super().__init__(token_type)
-        import re
-        self.re_str = regexp
-        self.regexp = re.compile(regexp, re_flags)
+        self.regex = regex
+        self.regex.compile(re_flags)
         self.excludes = set()
 
     def recognize(self, tokenizer):
@@ -167,7 +166,7 @@ class Regexp(Recognizer):
         line = tokenizer.peek_line
         if line == None:
             return None
-        match = self.regexp.match(line)
+        match = self.regex.match(line)
         if match is not None:
             for exclude in self.excludes:
                 if match.group(0) == exclude:
@@ -179,7 +178,7 @@ class Regexp(Recognizer):
             return None
 
     def __repr__(self):
-        return "Regexp(token_type={},regexp={})".format(self.token_type, self.re_str)
+        return "Regexp(token_type={},regex={})".format(self.token_type, self.regex)
 
     def __str__(self):
         return '"{}"::{}'.format(self.re_str, self.token_type)            

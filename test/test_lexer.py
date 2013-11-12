@@ -10,12 +10,13 @@ if __name__ == "__main__":
 
 import tangolib
 from tangolib.lexer import Char, CharIn, Regexp, make_string_tokenizer
+import tangolib.eregex as ere
 
 class TestLexerString(unittest.TestCase):
     def test_emph(self):
         underscore = tangolib.lexer.Char("underscore", '_')
         space = tangolib.lexer.CharIn("space", ' ', '\t')
-        word = tangolib.lexer.Regexp("word", r'([^_ \t\n\r\f\v]+)')
+        word = tangolib.lexer.Regexp("word", ere.ERegex(r'([^_ \t\n\r\f\v]+)'))
 
         tokens = tangolib.lexer.make_string_tokenizer("_example in emphasis_")
 
