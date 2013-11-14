@@ -212,6 +212,7 @@ class Parser:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":
                 unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+
             ###############################################
             ### Sections (latex-style or markdown-style ###
             ###############################################
@@ -243,6 +244,7 @@ class Parser:
                 current_element.append(section)
                 element_stack.append(current_element)
                 current_element = section
+
             ############################################
             ### Markdown-style itemize and enumerate ###
             ############################################
@@ -256,35 +258,56 @@ class Parser:
 
                 while continue_closing:
 
+                    dig_once_more = False
+
                     while current_element.markup_type not in { "environment", "section", "document" }:
                         current_element = stack.pop()
 
-                    if current_element.markup_type == "environment" and current_element.env_name in { "itemize", "enumerate" }:
-                        if current_element.env_name == mditem_style:
-                            try:
-                                if current_element.markdown_style:
-                                    pass # ok
-                                except:
-                                    raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
-                        
-                            if current_element.markdown_indent == mditem_indent:
-                                # add a further item at the same level
-                                element_stack.append(current_element)
-                                mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
-                                mditem.markdown_style = True
-                                current_element.append(mditem)
-                                current_element = mditem
+                    if current_element.markup_type == "environment" and current_element.env_name in { "itemize", "enumerate" }
+                    and current_element.env_name == mditem_style:
+                        try:
+                            if current_element.markdown_style:
+                                pass # ok
+                            except:
+                                raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
+   
+                        if current_element.markdown_indent == mditem_indent:
+                            # add a further item at the same level
+                            element_stack.append(current_element)
+                            mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
+                            mditem.markdown_style = True
+                            current_element.append(mditem)
+                            current_element = mditem
+                            continue_closing = False
+                        elif current_element.markdown_indent > mditem_indent:
+                            # close one
+                            current_element = element_stack.pop()
+                            continue_closing = True
+                            else: # dig one level more
+                                dig_once_more = True
                                 continue_closing = False
-                            elif current_element.markdown_indent > mditem_indent:
-                                # close one
-                                continue_closing = True
-                            else: # dig one level more (if indent is increased or style changed at the same level)
-                                mdlist = Environment(mditem_style, None, tok.start_pos, tok.end_pos)
-                                mdlist.markdown_style = True
-                                mdlist.markdown_indent = mditem_indent
 
-                        
-                        
+                    else:
+                        dig_once_more = True
+                        continue_closing = False
+
+                    if dig_once_more:
+                        mdlist = Environment(mditem_style, None, tok.start_pos, tok.end_pos)
+                        mdlist.markdown_style = True
+                        mdlist.markdown_indent = mditem_indent
+                        current_element.append(mdlist)
+                        element_stack.append(current_element)
+                        current_element = mdlist
+
+                        mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
+                        mditem.markdown_style = True
+                        current_element.append(mditem)
+                        element_stack.append(current_element)
+                        current_element = mditem
+
+                # loop if continue_closing == True
+
+                # and we're done
 
             ###########################################
             ### Special characters (newlines, etc.) ###
