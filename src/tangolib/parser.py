@@ -74,8 +74,8 @@ REGEX_SPACE_STR = r"[^\S\n\f\r]"
 REGEX_SPACE = ere.ERegex(REGEX_SPACE_STR)
 
 REGEX_MDLIST_OPEN = ere.ERegex("(?:^{0}*\\n)+({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
-REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n(?={0}+(?:[-+*\\d](?:\\.)?))".format(REGEX_SPACE_STR))
-REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
+#REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
+REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
 
 # main parser class
 
@@ -95,7 +95,7 @@ class Parser:
 
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
-        self.recognizers.append(lexer.Regexp("mdlist_item_last", REGEX_MDLIST_ITEM_LAST, re_flags=ere.MULTILINE))
+        #self.recognizers.append(lexer.Regexp("mdlist_item_last", REGEX_MDLIST_ITEM_LAST, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM, re_flags=ere.MULTILINE))
 
         self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
@@ -145,19 +145,11 @@ class Parser:
         current_element = doc
         continue_parse = True
         unparsed_content = Parser.UnparsedContent()
+
         while continue_parse:
             tok = lex.next_token()
             if tok is None:
                 unparsed_content.append_char(lex)
-            elif tok.token_type == "newline":
-                unparsed_content.flush(current_element)
-                newlines = tok.value
-                while lex.peek_char() == "\n" or lex.peek_char() == "\r":
-                    newlines += lex.next_char()
-                current_element.append(Newlines(newlines, tok.start_pos, tok.end_pos))
-            elif tok.token_type == "spaces":
-                unparsed_content.flush(current_element)
-                current_element.append(Spaces(tok.value.group(0), tok.start_pos, tok.end_pos))
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
                 continue_parse = False
@@ -220,6 +212,9 @@ class Parser:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":
                 unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+            ###############################################
+            ### Sections (latex-style or markdown-style ###
+            ###############################################
             elif tok.token_type == "section" or tok.token_type == "mdsection":
                 if tok.token_type == "section":
                     # latex section markup
@@ -248,8 +243,63 @@ class Parser:
                 current_element.append(section)
                 element_stack.append(current_element)
                 current_element = section
+            ############################################
+            ### Markdown-style itemize and enumerate ###
+            ############################################
+            elif tok.token_type == "mdlist_open" or tok.token_type == "mdlist_item":
+                mditem_indent = len(tok.value.group(1))
+                mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
+
+                unparsed_content.flush(current_element)
+
+                continue_closing = True
+
+                while continue_closing:
+
+                    while current_element.markup_type not in { "environment", "section", "document" }:
+                        current_element = stack.pop()
+
+                    if current_element.markup_type == "environment" and current_element.env_name in { "itemize", "enumerate" }:
+                        if current_element.env_name == mditem_style:
+                            try:
+                                if current_element.markdown_style:
+                                    pass # ok
+                                except:
+                                    raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
+                        
+                            if current_element.markdown_indent == mditem_indent:
+                                # add a further item at the same level
+                                element_stack.append(current_element)
+                                mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
+                                mditem.markdown_style = True
+                                current_element.append(mditem)
+                                current_element = mditem
+                                continue_closing = False
+                            elif current_element.markdown_indent > mditem_indent:
+                                # close one
+                                continue_closing = True
+                            else: # dig one level more (if indent is increased or style changed at the same level)
+                                mdlist = Environment(mditem_style, None, tok.start_pos, tok.end_pos)
+                                mdlist.markdown_style = True
+                                mdlist.markdown_indent = mditem_indent
+
+                        
+                        
+
+            ###########################################
+            ### Special characters (newlines, etc.) ###
+            ###########################################
             elif tok.token_type == "protected":
                 unparsed_content.append_str(tok.value[1:], tok.start_pos, tok.end_pos)
+            elif tok.token_type == "newline":
+                unparsed_content.flush(current_element)
+                newlines = tok.value
+                while lex.peek_char() == "\n" or lex.peek_char() == "\r":
+                    newlines += lex.next_char()
+                current_element.append(Newlines(newlines, tok.start_pos, tok.end_pos))
+            elif tok.token_type == "spaces":
+                unparsed_content.flush(current_element)
+                current_element.append(Spaces(tok.value.group(0), tok.start_pos, tok.end_pos))
             else:
                 # unrecognized token type
                 raise ParseError(tok.start_pos, tok.end_pos, "Unrecognized token type: {}".format(tok.token_type))

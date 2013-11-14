@@ -71,6 +71,12 @@ class ERegex:
         def group(self, *args):
             return self.match.group(*args)
 
+        def start(self, groud_id):
+            return self.match.start(group_id)
+
+        def end(self, group_id):
+            return self.match.end(group_id)
+
         def show(self, show_open=">>", show_close="<<"):
             return '''Match details:
     Input matched = {open}{input}{close}
