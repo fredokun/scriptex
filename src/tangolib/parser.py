@@ -72,6 +72,7 @@ REGEX_CMD_HEADER = ere.ERegex(r"\\(" + REGEX_IDENT_STR + r")(?:\[([^\]]+)\])?")
 
 REGEX_SPACE_STR = r"[^\S\n\f\r]"
 REGEX_SPACE = ere.ERegex(REGEX_SPACE_STR)
+REGEX_SPACES = ere.ERegex("({})+".format(REGEX_SPACE_STR))
 
 REGEX_MDLIST_OPEN = ere.ERegex("(?:^{0}*\\n)+({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
 #REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
@@ -253,6 +254,12 @@ class Parser:
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
 
                 unparsed_content.flush(current_element)
+                
+                # remove the previous item if it is active
+                if current_element.markup_type == "command" and current_element.cmd_name == "item":
+                    if not hasattr(current_element, "markdown_style"):
+                        raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
+                    current_element = element_stack.pop()
 
                 continue_closing = True
 
@@ -260,16 +267,16 @@ class Parser:
 
                     dig_once_more = False
 
-                    while current_element.markup_type not in { "environment", "section", "document" }:
-                        current_element = stack.pop()
+                    while current_element.markup_type not in { "command", "environment", "section", "document" }:
+                        current_element = element_stack.pop()
 
-                    if current_element.markup_type == "environment" and current_element.env_name in { "itemize", "enumerate" }
-                    and current_element.env_name == mditem_style:
+                    if (current_element.markup_type == "environment") and (current_element.env_name in { "itemize", "enumerate" }) \
+                    and (current_element.env_name == mditem_style):
                         try:
                             if current_element.markdown_style:
                                 pass # ok
-                            except:
-                                raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
+                        except AttributeError:
+                            raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
    
                         if current_element.markdown_indent == mditem_indent:
                             # add a further item at the same level
@@ -283,9 +290,9 @@ class Parser:
                             # close one
                             current_element = element_stack.pop()
                             continue_closing = True
-                            else: # dig one level more
-                                dig_once_more = True
-                                continue_closing = False
+                        else: # dig one level more
+                            dig_once_more = True
+                            continue_closing = False
 
                     else:
                         dig_once_more = True
@@ -319,7 +326,38 @@ class Parser:
                 newlines = tok.value
                 while lex.peek_char() == "\n" or lex.peek_char() == "\r":
                     newlines += lex.next_char()
+
+                ##  Special treatment for markdown lists
+                if len(newlines) >= 2:
+                    # remove the previous item if it is active
+                    if current_element.markup_type == "command" and current_element.cmd_name == "item":
+                        if not hasattr(current_element, "markdown_style"):
+                            raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
+                        current_element = element_stack.pop()
+
+                    # check if we need to finish some markdown list
+                    element_stack_copy = element_stack[:]
+                    element_stack_copy.append(current_element)
+                    top_mdlist = None
+                    while element_stack_copy:
+                        current_element_copy = element_stack_copy.pop()
+                        if current_element_copy.markup_type in { "command", "environment", "section", "document" } \
+                           and not hasattr(current_element_copy, "markdown_style"):
+                            element_stack = []
+                        elif current_element_copy.markup_type == "environment":
+                            top_mdlist = current_element_copy
+                        
+                        
+                    if top_mdlist: # found a markdown list to close
+                        while current_element is not top_mdlist:
+                            current_element = element_stack.pop()
+
+                        # close the top markdown list
+                        current_element = element_stack.pop()
+                        
+
                 current_element.append(Newlines(newlines, tok.start_pos, tok.end_pos))
+
             elif tok.token_type == "spaces":
                 unparsed_content.flush(current_element)
                 current_element.append(Spaces(tok.value.group(0), tok.start_pos, tok.end_pos))

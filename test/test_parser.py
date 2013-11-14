@@ -212,6 +212,47 @@ this is in section \emph{subsection 2.2}
         # TODO: validate the result
 
 
+    def test_list_simple(self):
+        parser = Parser()
+
+        ret = parser.parse_from_string(r"""
+
+\begin{itemize}
+
+\item item 1.1
+\item item 1.2
+
+\begin{enumerate}
+
+\item item 2.1
+\item item 2.2
+
+\end{enumerate}
+
+\end{itemize}
+""")
+
+        print("doc 9 = {}".format(ret))
+        
+        # TODO: validate the result
+        
+
+    def test_mdlist_simple(self):
+        parser = Parser()
+
+        ret = parser.parse_from_string(r"""
+
+   - item 1.1
+   - item 1.2
+     * item 2.1
+     * item 2.2
+
+""")
+
+        print("doc 10 = {}".format(ret))
+        
+        # TODO: validate the result
+
         
 if __name__ == '__main__':
     unittest.main()
