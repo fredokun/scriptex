@@ -248,8 +248,11 @@ class Parser:
 
             ############################################
             ### Markdown-style itemize and enumerate ###
-            ############################################
+            ############################################$
             elif tok.token_type == "mdlist_open" or tok.token_type == "mdlist_item":
+                # BREAKPOINT >>> # 
+                import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
                 mditem_indent = len(tok.value.group(1))
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
 
