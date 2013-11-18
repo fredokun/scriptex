@@ -284,7 +284,7 @@ class Parser:
                         if current_element.markdown_indent == mditem_indent:
                             # add a further item at the same level
                             element_stack.append(current_element)
-                            mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
+                            mditem = Command("item", None, tok.start_pos, tok.end_pos)
                             mditem.markdown_style = True
                             current_element.append(mditem)
                             current_element = mditem
@@ -309,7 +309,7 @@ class Parser:
                         element_stack.append(current_element)
                         current_element = mdlist
 
-                        mditem = Command(mditem_style, None, tok.start_pos, tok.end_pos)
+                        mditem = Command("item", None, tok.start_pos, tok.end_pos)
                         mditem.markdown_style = True
                         current_element.append(mditem)
                         element_stack.append(current_element)
