@@ -330,7 +330,7 @@ class Parser:
                     newlines += lex.next_char()
 
                 ##  Special treatment for markdown lists
-                if len(newlines) >= 2:
+                if len(newlines) >= 2 or lex.at_eof():
                     # remove the previous item if it is active
                     if current_element.markup_type == "command" and current_element.cmd_name == "item":
                         if not hasattr(current_element, "markdown_style"):
