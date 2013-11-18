@@ -250,8 +250,7 @@ class Parser:
             ### Markdown-style itemize and enumerate ###
             ############################################$
             elif tok.token_type == "mdlist_open" or tok.token_type == "mdlist_item":
-                # BREAKPOINT >>> # 
-                import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+                # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
                 mditem_indent = len(tok.value.group(1))
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
@@ -346,7 +345,7 @@ class Parser:
                         current_element_copy = element_stack_copy.pop()
                         if current_element_copy.markup_type in { "command", "environment", "section", "document" } \
                            and not hasattr(current_element_copy, "markdown_style"):
-                            element_stack = []
+                            element_stack_copy = []
                         elif current_element_copy.markup_type == "environment":
                             top_mdlist = current_element_copy
                         
