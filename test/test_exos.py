@@ -11,7 +11,7 @@ if __name__ == "__main__":
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
 from tangolib.processors import core, codeactive
-from tangolib.generators.latex.article import LatexArticleGenerator
+from tangolib.generators.latex.latexgen import LatexGenerator
 
 class TestExos(unittest.TestCase):
 
@@ -73,7 +73,7 @@ def fact(n):
         print("After process = \n" + str(doc))
 
         # 3) generating
-        generator = LatexArticleGenerator(doc)
+        generator = LatexGenerator(doc)
         generator.generate()
 
         #print("Output =\n" + str(generator.output))

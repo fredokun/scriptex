@@ -1,4 +1,4 @@
-"""Basic latex generator based on document class article.
+"""Base for latex generation.
 """
 
 from tangolib.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
@@ -29,7 +29,7 @@ class LatexOutput:
         self.output.append((orig_pos, self.output_line, text))
         if self.output_line not in self.pos_map:
             self.pos_map[self.output_line] = orig_pos
-        
+
     def newline(self, orig_pos):
         orig_pos = self.register_orig_pos(orig_pos)
         self.output.append((orig_pos, self.output_line, "\n"))
@@ -40,7 +40,7 @@ class LatexOutput:
     def __str__(self):
         return "" if not self.output else "".join([str_ for (_,__,str_) in self.output])
         
-class LatexArticleGenerator(DocumentGenerator):
+class LatexGenerator(DocumentGenerator):
     def __init__(self, document):
         super().__init__(document)
         self.default_command_generator = DefaultLatexCommandGenerator()

@@ -11,7 +11,7 @@ if __name__ == "__main__":
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
 from tangolib.processors import core
-from tangolib.generators.latex.article import LatexArticleGenerator
+from tangolib.generators.latex.latexgen import LatexGenerator
 
 class TestBasicLatex(unittest.TestCase):
 
@@ -28,7 +28,7 @@ class TestBasicLatex(unittest.TestCase):
         processor.process()
 
         # 3) generating
-        generator = LatexArticleGenerator(doc)
+        generator = LatexGenerator(doc)
         generator.generate()
 
         print("Output =\n" + str(generator.output))

@@ -7,7 +7,7 @@ import sys
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
 from tangolib.processors import core, codeactive
-from tangolib.generators.latex.article import LatexArticleGenerator
+from tangolib.generators.latex.latexgen import LatexGenerator
 
 def tangoArgumentParser():
     parser = argparse.ArgumentParser(prog="tango", description="a programmable document processor")
