@@ -7,7 +7,8 @@ import sys
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
 from tangolib.processors import core, codeactive
-from tangolib.generators.latex.latexgen import LatexGenerator
+from tangolib.generators.latex.latexconfig import LatexConfiguration
+from tangolib.generators.latex.latexgen import LatexDocumentGenerator
 
 def tangoArgumentParser():
     parser = argparse.ArgumentParser(prog="tango", description="a programmable document processor")
@@ -58,17 +59,36 @@ ________________________|     !  | f__________________________________!
 
 """
 
+def tangoPrint(*args, echo=True):
+    if echo:
+        print("[Tango] ", end='')
+    print(*args, end='')
+
+def tangoPrintln(*args, echo=True):
+    if echo:
+        print("[Tango] ", end='')
+    print(*args)
+    
+def tangoErr(*args):
+    print(*args, file=sys.stderr, end='')
+
+def tangoErrln(*args):
+    print(*args, file=sys.stderr)
+
+def fatal(*args):
+    tangoErrln(*args)
+    tangoErrln(" ==> aborpting ...")
+    sys.exit(1)
 
 if __name__ == "__main__":
 
-    print("""   ______                      
+    tangoPrintln("""   ______                      
   /_  __/___ _____  ____ _____ 
    / / / __ `/ __ \/ __ `/ __ \  Programmable Document Processor v0.1
   / / / /_/ / / / / /_/ / /_/ /
  /_/  \__,_/_/ /_/\__, /\____/   (C) 2013 F.Peschanski (see LICENSE)
                  /____/        
----
-Ready to process ...""")
+---""", echo=False)
 
     arg_parser = tangoArgumentParser()
     args = arg_parser.parse_args()
@@ -79,37 +99,35 @@ Ready to process ...""")
     enable_process_phase = True
         
     if enable_process_phase:
-        print("Process phase enabled", file=sys.stderr)
+        tangoPrintln("Process phase enabled")
 
     enable_generate_phase = True
     if not enable_process_phase:
         enable_generate_phase = False
 
     if enable_generate_phase:
-        print("Generate phase enabled", file=sys.stderr)
+        tangoPrintln("Generate phase enabled")
 
+    latex_config = None
     enable_write_phase = False
     if args.latex:
         enable_write_phase = True
+        latex_config = LatexConfiguration()
 
     if not enable_generate_phase:
         enable_write_phase = False
 
     if enable_write_phase:
-        print("Write phase enabled", file=sys.stderr)
+        tangoPrintln("Write phase enabled")
 
     import os
-    print("Current work directory = '{}'".format(os.getcwd()), file=sys.stderr)
-
-    print("----", file=sys.stderr)
+    tangoPrintln("Current work directory = '{}'".format(os.getcwd()))
 
     # 1) parsing
 
     parser = Parser()
-    # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-    
 
-    print("Parsing from file '{}'".format(args.input_file), file=sys.stderr)
+    tangoPrintln("Parsing from file '{}'".format(args.input_file))
 
     doc = parser.parse_from_file(args.input_file)
 
@@ -122,16 +140,16 @@ Ready to process ...""")
 
         # support for active python code
         if args.codeactive:
-            print("Enabling active python code processors", file=sys.stderr)
+            tangoPrintln("Enabling active python code processors")
 
             py_ctx = codeactive.PythonContext()
             codeactive.register_processors(processor, py_ctx)
 
         try:
             processor.process()
-        except codeactive.CheckPythonFailure:
-            print("CheckPython failed, aborpting ...", file=sys.stderr)
-            sys.exit(1)
+        except codeactive.CheckPythonFailure as e:
+            tangoErrln("CheckPython failed ...")
+            fatal(str(e))
 
     # 3) generating
 
@@ -141,12 +159,14 @@ Ready to process ...""")
 
         if args.latex:
             # latex mode
-            print("Generating latex", file=sys.stderr)
-
-            generator = LatexArticleGenerator(doc)
+            tangoPrintln("Generating latex")
+            
+            generator = LatexDocumentGenerator(doc, latex_config)
+            generator.straighten_configuration()
             
         if not generator:
-            print("No generator set, aborpting ...", file=sys.stderr)
+            fatal("No generator set")
+            
 
         generator.generate()
         
@@ -162,11 +182,11 @@ Ready to process ...""")
         try:
             os.makedirs(output_directory)
         except OSError:
-            print("Using ", file=sys.stderr, end="")
+            tangoPrint("Using ")
         else:
-            print("Creating ", file=sys.stderr, end="")
+            tangoPrint("Creating ")
 
-        print("output directory '{}'".format(output_directory), file=sys.stderr)
+        tangoPrintln("output directory '{}'".format(output_directory))
 
         infile_without_ext = args.input_file.split(".")
         if infile_without_ext[-1] == "tex":
@@ -176,7 +196,7 @@ Ready to process ...""")
 
         main_output_filename = output_directory + "/" + infile_without_ext + "-gen." + output_mode_dir
 
-        print("Writing main {} file '{}'".format(output_mode_dir, main_output_filename), file=sys.stderr)
+        tangoPrintln,("Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
 
         main_output_file = open(main_output_filename, 'w')
         main_output_file.write(str(generator.output))

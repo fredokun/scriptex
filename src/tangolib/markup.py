@@ -12,6 +12,9 @@ class AbstractMarkup:
             return ""
         return '{}="{}"'.format(pos_name, str(pos))
 
+    def is_markup(self):
+        return False
+
     def positions_toxml(self):
         return '{} {}'.format(self.pos_toxml("start_pos", self.start_pos), self.pos_toxml("end_pos", self.end_pos))
 
@@ -29,6 +32,9 @@ class Markup(AbstractMarkup):
 
     def append(self, element):
         self.content.append(element)
+
+    def is_markup(self):
+        return True
 
 class Document(Markup):
     def __init__(self, filename, start_pos):

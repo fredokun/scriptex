@@ -39,10 +39,37 @@ class LatexOutput:
         
     def __str__(self):
         return "" if not self.output else "".join([str_ for (_,__,str_) in self.output])
-        
-class LatexGenerator(DocumentGenerator):
-    def __init__(self, document):
+
+def guess_document_class(document):
+    """A relatively silly heuristics to guess the document class.
+    """
+    node = document
+    nodes = []
+    search_more = True
+    while search_more:
+        if node.is_markup() and node.markup_type == "section":
+            if section_of_depth(section.depth) == "section":
+                return "article"
+            elif section_of_depth(section.depth) == "chapter":
+                return "book"
+            elif section_of_depth(section.depth) == "part":
+                return "book"
+            else:
+                return None
+        nodes = nodes.extend(node.content)
+        if nodes:
+            node = nodes.pop()
+        else:
+            search_more = False
+
+    # by default use article
+    return "article"
+
+class LatexDocumentGenerator(DocumentGenerator):
+    def __init__(self, document, latex_config):
         super().__init__(document)
+        self.latex_config = latex_config
+
         self.default_command_generator = DefaultLatexCommandGenerator()
         self.default_environment_generator = DefaultLatexEnvironmentGenerator()
         self.default_section_generator = DefaultLatexSectionGenerator()
@@ -51,11 +78,50 @@ class LatexGenerator(DocumentGenerator):
         self.spaces_generator = LatexSpacesGenerator()
         self.newlines_generator = LatexNewlinesGenerator()
         
+    def straighten_configuration(self):
+        if not self.latex_config.document_class:
+            self.latex_config.document_class = guess_document_class(self.document)
+
     def generate(self):
+        self.latex_config.check_configuration()
+
         self.output = LatexOutput()
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
+        preamble = self.generate_preamble()
+        self.output.append(None, preamble)
+
+        self.output.append(None, \
+"""
+%%% >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+%%% Tango: Beginning of top-level document
+\\begin{document}
+""")
+
         super().generate()
 
+        self.output.append(None, \
+"""
+%%% <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+%%% Tango: End of top-level document
+\\end{document}
+""")
+
+    def generate_preamble(self):
+        return \
+"""\
+%%% >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+%%% Tango latex preamble starts here
+
+\documentclass{class_options}{{{document_class}}}
+
+%%% Tango only supports extended utf-8 encodings
+\\usepackage{{ucs}}
+\\usepackage[utf8x]{{inputenc}}
+
+%%% <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+%%% Tango latex preamble stops here
+""".format(class_options=("["+(",".join(self.latex_config.class_options))+"]") if self.latex_config.class_options else "",
+           document_class=self.latex_config.document_class)
 
 class DefaultLatexCommandGenerator(CommandGenerator):
     def __init__(self):
