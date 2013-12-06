@@ -64,6 +64,8 @@ REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.st
 REGEX_ENV_HEADER = ere.ERegex(r"\\begin{([^}]+)}(?:\[([^\]]+)\])?")
 REGEX_ENV_FOOTER = ere.ERegex(r"\\end{([^}]+)}")
 
+REGEX_INCLUDE = ere.ERegex(r"\\include{([^}]+)}")
+
 REGEX_SECTION = ere.ERegex(r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}")
 REGEX_MDSECTION = ere.ERegex(r"^(=+)\s+([^=]+)\s+(=*)(.*)$")
 
@@ -91,6 +93,7 @@ class Parser:
         self.recognizers.append(lexer.Regexp("line_comment", REGEX_LINE_COMMENT))
         self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
+        self.recognizers.append(lexer.Regexp("include", REGEX_INCLUDE))
         self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
         self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
 
@@ -127,7 +130,7 @@ class Parser:
 
         def flush(self, parent):
             if self.content != "":
-                parent.append(Text(self.content, self.start_pos, self.end_pos))
+                parent.append(Text(parent.doc, self.content, self.start_pos, self.end_pos))
                 self.content = ""
             self.start_pos = None
             self.end_pos = None
@@ -139,7 +142,7 @@ class Parser:
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
-        doc = Document(self.filename, lex.pos)
+        doc = Document(self.filename, lex)
         
         element_stack = []
 
@@ -151,14 +154,40 @@ class Parser:
             tok = lex.next_token()
             if tok is None:
                 unparsed_content.append_char(lex)
+ 
+            ###############################################
+            ### End of input                            ###
+            ###############################################
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
-                continue_parse = False
+
+                while current_element.markup_type not in { "document", "subdoc" }:
+                    if current_element.markup_type == "command":
+                        raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
+                    elif current_element.markup_type == "environment":
+                        raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished environment before end of document")
+                    else:
+                        # ok to close
+                        current_element.end_pos = tok.start_pos
+                        current_element = element_stack.pop()
+
+                if current_element.markup_type == "subdoc":
+                    lex = current_element.sublex
+                    doc = current_element.doc
+                    current_element = element_stack.pop()
+                else: # end of document
+                    continue_parse = False
+
+            ### Line comment ###
             elif tok.token_type == "line_comment":
                 pass # just skip this
+
+            ###############################################
+            ### Environments                            ###
+            ###############################################
             elif tok.token_type == "env_header":
                 unparsed_content.flush(current_element)
-                env = Environment(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
+                env = Environment(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(env)
                 element_stack.append(current_element)
                 current_element = env
@@ -174,9 +203,13 @@ class Parser:
 
                 # Pop parent element
                 current_element = element_stack.pop()
+
+            ###############################################
+            ### Commands                                ###
+            ###############################################
             elif tok.token_type == "cmd_header":
                 unparsed_content.flush(current_element)
-                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
+                cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
                 
                 ntok = lex.next_token()
@@ -197,7 +230,7 @@ class Parser:
                     unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
-                cmd = Command(tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
+                cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
                 current_element.append(cmd)
                 preformated = ""
                 eat_preformated = True
@@ -213,6 +246,35 @@ class Parser:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":
                 unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+
+            ###############################################
+            ### Include and subdocuments                ###
+            ###############################################
+            elif tok.token_type == "include":
+                unparsed_content.flush(current_element)
+                sub_filename = tok.value.group(1)
+                try:
+                    sub_file = open(sub_filename, "r")
+                except OSError:
+                    raise ParseError(tok.start_pos, lex.pos, "Cannot open included file: {}".format(sub_filename))
+
+                try:
+                    sub_input = sub_file.read()
+                except IOError:
+                    raise ParseError(tok.start_pos, lex.pos, "Cannot read included file: {} (IO error)".format(sub_filename))
+                finally:
+                    sub_input.close()
+                    
+                sub_tokens = lexer.Tokenizer(lexer.StringTokenizer(sub_input))
+                sub_lex = lexer.Lexer(sub_tokens, *self.recognizers)
+
+                sub_doc = SubDocument(doc, sub_filename, tok.start_pos, sub_lex)
+
+                element_stack.push(current_element)
+                current_element = sub_doc
+                
+                doc = sub_doc
+                lex = sub_lex
 
             ###############################################
             ### Sections (latex-style or markdown-style ###
@@ -238,10 +300,11 @@ class Parser:
                 # ok to parse new section
                 unparsed_content.flush(current_element)
                 # close all sections of greater or equal depth
-                while current_element.section_depth >= section_depth:
+                while current_element.markup_type == "section" \
+                      and current_element.section_depth >= section_depth: # TODO: fix probably needed for mixing inclusion and sectionnning
                     current_element.end_pos = tok.start_pos
                     current_element = element_stack.pop()
-                section = Section(section_title, section_of_depth(section_depth), section_depth, tok.start_pos, tok.end_pos)
+                section = Section(doc, section_title, section_of_depth(section_depth), section_depth, tok.start_pos, tok.end_pos)
                 current_element.append(section)
                 element_stack.append(current_element)
                 current_element = section
@@ -269,7 +332,8 @@ class Parser:
 
                     dig_once_more = False
 
-                    while current_element.markup_type not in { "command", "environment", "section", "document" }:
+                    # TODO: fix probably needed for closing with subdocument
+                    while current_element.markup_type not in { "command", "environment", "section", "document", "subdoc" }:
                         current_element = element_stack.pop()
 
                     if (current_element.markup_type == "environment") and (current_element.env_name in { "itemize", "enumerate" }) \
@@ -283,7 +347,7 @@ class Parser:
                         if current_element.markdown_indent == mditem_indent:
                             # add a further item at the same level
                             element_stack.append(current_element)
-                            mditem = Command("item", None, tok.start_pos, tok.end_pos)
+                            mditem = Command(doc, "item", None, tok.start_pos, tok.end_pos)
                             mditem.markdown_style = True
                             current_element.append(mditem)
                             current_element = mditem
@@ -301,14 +365,14 @@ class Parser:
                         continue_closing = False
 
                     if dig_once_more:
-                        mdlist = Environment(mditem_style, None, tok.start_pos, tok.end_pos)
+                        mdlist = Environment(doc, mditem_style, None, tok.start_pos, tok.end_pos)
                         mdlist.markdown_style = True
                         mdlist.markdown_indent = mditem_indent
                         current_element.append(mdlist)
                         element_stack.append(current_element)
                         current_element = mdlist
 
-                        mditem = Command("item", None, tok.start_pos, tok.end_pos)
+                        mditem = Command(doc, "item", None, tok.start_pos, tok.end_pos)
                         mditem.markdown_style = True
                         current_element.append(mditem)
                         element_stack.append(current_element)
@@ -358,11 +422,11 @@ class Parser:
                         current_element = element_stack.pop()
                         
 
-                current_element.append(Newlines(newlines, tok.start_pos, tok.end_pos))
+                current_element.append(Newlines(doc, newlines, tok.start_pos, tok.end_pos))
 
             elif tok.token_type == "spaces":
                 unparsed_content.flush(current_element)
-                current_element.append(Spaces(tok.value.group(0), tok.start_pos, tok.end_pos))
+                current_element.append(Spaces(doc, tok.value.group(0), tok.start_pos, tok.end_pos))
             else:
                 # unrecognized token type
                 raise ParseError(tok.start_pos, tok.end_pos, "Unrecognized token type: {}".format(tok.token_type))

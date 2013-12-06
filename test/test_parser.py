@@ -142,7 +142,7 @@ text (in parentheses)
     def test_section_simple(self):
         parser = Parser()
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        # BREAKPOINT >>> # import ipdb; ipdb.set_trace()  # <<< BREAKPOINT #
         ret = parser.parse_from_string(r"""
 
 \section{section 1}

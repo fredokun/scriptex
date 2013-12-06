@@ -1,6 +1,7 @@
 
 class AbstractMarkup:
-    def __init__(self, start_pos, end_pos):
+    def __init__(self, doc, start_pos, end_pos):
+        self.doc = doc
         self.start_pos = start_pos
         self.end_pos = end_pos
         
@@ -19,8 +20,8 @@ class AbstractMarkup:
         return '{} {}'.format(self.pos_toxml("start_pos", self.start_pos), self.pos_toxml("end_pos", self.end_pos))
 
 class Markup(AbstractMarkup):
-    def __init__(self, markup_type, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, markup_type, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
         self.markup_type = markup_type
 
         self.content = []
@@ -37,10 +38,10 @@ class Markup(AbstractMarkup):
         return True
 
 class Document(Markup):
-    def __init__(self, filename, start_pos):
-        super().__init__("document", start_pos, None)
+    def __init__(self, filename, lex):
+        super().__init__(None, "document", lex.pos, None)
         self.filename = filename
-        self.section_depth = 0  # document has minimal depth
+        self.lex = lex
 
     def __repr__(self):
         return "Document(content={})".format(repr(self.content))
@@ -52,9 +53,25 @@ class Document(Markup):
         ret += (indent_string * indent_level) + '</document>\n'
         return ret
 
+class SubDocument(Markup):
+    def __init__(self, parent_doc, filename, start_pos, sublex):
+        super().__init__(parent_doc, "subdoc", start_pos, None)
+        self.filename = filename
+        self.sublex = sublex
+
+    def __repr__(self):
+        return "SubDocument(content={})".format(repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<subdoc filename="{}" {}>\n'.format(self.filename, self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + '</subdoc>\n'
+        return ret
+
 class Command(Markup):
-    def __init__(self, cmd_name, cmd_opts, header_start_pos, header_end_pos, preformated=False):
-        super().__init__("command", header_start_pos, header_end_pos)
+    def __init__(self, doc, cmd_name, cmd_opts, header_start_pos, header_end_pos, preformated=False):
+        super().__init__(doc, "command", header_start_pos, header_end_pos)
         self.cmd_name = cmd_name
         self.cmd_opts = cmd_opts
         self.header_end_pos = header_end_pos
@@ -77,8 +94,8 @@ class Command(Markup):
         return ret
 
 class Environment(Markup):
-    def __init__(self, env_name, env_opts, header_start_pos, header_end_pos):
-        super().__init__("environment", header_start_pos, None)
+    def __init__(self, doc, env_name, env_opts, header_start_pos, header_end_pos):
+        super().__init__(doc, "environment", header_start_pos, None)
         self.env_name = env_name
         self.env_opts = env_opts
         self.header_end_pos = header_end_pos
@@ -98,8 +115,8 @@ class Environment(Markup):
 
 
 class Section(Markup):
-    def __init__(self, section_title, section_name, section_depth, header_start_pos, header_end_pos):
-        super().__init__("section", header_start_pos, None)
+    def __init__(self, doc, section_title, section_name, section_depth, header_start_pos, header_end_pos):
+        super().__init__(doc, "section", header_start_pos, None)
         self.section_title = section_title
         self.section_name = section_name
         self.section_depth = section_depth
@@ -117,8 +134,8 @@ class Section(Markup):
 
 
 class Text(AbstractMarkup):
-    def __init__(self, text, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, text, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
         self.text = text
 
     def __repr__(self):
@@ -131,8 +148,8 @@ class Text(AbstractMarkup):
 
 
 class Preformated(AbstractMarkup):
-    def __init__(self, text, lang, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, text, lang, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
         self.text = text
         self.lang = lang
 
@@ -148,8 +165,8 @@ class Preformated(AbstractMarkup):
         return ret
 
 class Newlines(AbstractMarkup):
-    def __init__(self, newlines, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, newlines, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
         self.newlines = newlines
 
     def __repr__(self):
@@ -162,8 +179,8 @@ class Newlines(AbstractMarkup):
 
 
 class Spaces(AbstractMarkup):
-    def __init__(self, spaces, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, spaces, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
         self.spaces = spaces
 
     def __repr__(self):
@@ -175,8 +192,8 @@ class Spaces(AbstractMarkup):
         return ret
 
 class SkipMarkup(AbstractMarkup):
-    def __init__(self, start_pos, end_pos):
-        super().__init__(start_pos, end_pos)
+    def __init__(self, doc, start_pos, end_pos):
+        super().__init__(doc, start_pos, end_pos)
 
     def __repr__(self):
         return "SkipMarkup()"
