@@ -48,7 +48,7 @@ class EvalPythonProcessor(CommandProcessor):
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = self.python_context.eval_python_expr(cmd.content, processor.document.filename, cmd.header_end_pos.lpos)
         output = self.python_context.pprint.pformat(ret)
-        return (markup.Preformated(output, "python-3", cmd.start_pos, cmd.end_pos), False)
+        return (markup.Preformated(cmd.doc, output, "python-3", cmd.start_pos, cmd.end_pos), False)
 
 class DefPythonProcessor(CommandProcessor):
     def __init__(self, python_context):
@@ -59,7 +59,7 @@ class DefPythonProcessor(CommandProcessor):
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         self.python_context.def_python(cmd.cmd_opts, cmd.content, processor.document.filename, cmd.header_end_pos.lpos)
         # TODO: log the registered function
-        return (markup.SkipMarkup(cmd.start_pos, cmd.end_pos), False)
+        return (markup.SkipMarkup(cmd.doc, cmd.start_pos, cmd.end_pos), False)
         
 class CheckPythonProcessor(CommandProcessor):
     def __init__(self, python_context):
@@ -74,9 +74,9 @@ class CheckPythonProcessor(CommandProcessor):
         # XXX : for the moment an exception should be launched, think about different behaviors
         # if we are here then everything went fine (?)
         if cmd.cmd_opts == "hide":
-            return (markup.SkipMarkup(cmd.start_pos, cmd.end_pos), False)
+            return (markup.SkipMarkup(cmd.doc, cmd.start_pos, cmd.end_pos), False)
         else:
-            return (markup.Preformated(cmd.content, "python-3", cmd.start_pos, cmd.end_pos), False)
+            return (markup.Preformated(cmd.doc, cmd.content, "python-3", cmd.start_pos, cmd.end_pos), False)
 
 
 class CheckPythonFailure(Exception):

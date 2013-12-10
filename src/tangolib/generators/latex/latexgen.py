@@ -172,14 +172,18 @@ class LatexPreformatedGenerator(PreformatedGenerator):
     def __init__(self):
         self.verb_chars = [ '|', '!', '+', '-', '/', '<', '>' ] # TODO: a more systematic treatment ?
 
-    def on_preformated(self, generator, text):
-        for verb_char in self.verb_chars:
-            if verb_char not in text.text:
-                generator.output.append(text.start_pos.lpos, r"\verb{0}{1}{0}".format(verb_char, text.text))
-                return # don't escape too much
+    def on_preformated(self, generator, preformated):
+        if preformated.lang == "inline":
+            for verb_char in self.verb_chars:
+                if verb_char not in preformated.text:
+                    generator.output.append(preformated.start_pos.lpos, r"\verb{0}{1}{0}".format(verb_char, preformated.text))
+                    return # don't escape too much
 
-        # no available verbatim character
-        raise GenerateError("All verbatim characters used", text.start_pos, text.end_pos)
+                # no available verbatim character
+                raise GenerateError("All verbatim characters used", preformated.start_pos, preformated.end_pos)
+
+        else: # output as text (XXX: is this ok ?)
+            generator.output.append(preformated.start_pos.lpos, preformated.text)
         
 class LatexSpacesGenerator(SpacesGenerator):
     def __init__(self):
