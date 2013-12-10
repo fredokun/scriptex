@@ -15,6 +15,7 @@ class DocumentProcessor:
         self.env_processors = dict()
         self.sec_processors = dict()
         self.text_processor = TextProcessor()  # default: copy as source
+        self.preformated_processor = PreformatedProcessor()
         self.spaces_processor = SpacesProcessor()
         self.newlines_processor = NewlinesProcessor()
         
@@ -124,6 +125,10 @@ class DocumentProcessor:
                         ntext = self.text_processor.process_text(self, child)
                         if ntext is not None:
                             self.markup.content[self.content_index] = ntext
+                    elif isinstance(child, Preformated) and self.preformated_processor is not None:
+                        npreformated = self.preformated_processor.process_preformated(self, child)
+                        if npreformated is not None:
+                            self.markup.content[self.content_index] = npreformated
                     elif isinstance(child, Spaces) and self.spaces_processor is not None:
                         nspaces = self.spaces_processor.process_spaces(self, child)
                         if nspaces is not None:
@@ -179,6 +184,13 @@ class TextProcessor:
 
     def process_text(self, processing, text):
         return text
+
+class PreformatedProcessor:
+    def __ini__(self):
+        pass
+
+    def process_preformated(self, processing, preformated):
+        return preformated
 
 class SpacesProcessor:
     def __init__(self):
