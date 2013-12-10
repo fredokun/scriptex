@@ -3,7 +3,7 @@ by interpreting commands and/or environments.
 
 """
 
-from tangolib.markup import Markup, Text, Spaces, Newlines, SkipMarkup
+from tangolib.markup import Markup, Text, Spaces, Newlines, SkipMarkup, Preformated
 
 class ProcessError(Exception):
     pass

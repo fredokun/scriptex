@@ -170,11 +170,16 @@ class LatexTextGenerator(TextGenerator):
 
 class LatexPreformatedGenerator(PreformatedGenerator):
     def __init__(self):
-        pass
+        self.verb_chars = [ '|', '!', '+', '-', '/', '<', '>' ] # TODO: a more systematic treatment ?
 
-    def on_text(self, generator, text):
-        generator.output.append(text.start_pos.lpos, text.text)
-        # TODO:  escape strings for latex output
+    def on_preformated(self, generator, text):
+        for verb_char in self.verb_chars:
+            if verb_char not in text.text:
+                generator.output.append(text.start_pos.lpos, r"\verb{0}{1}{0}".format(verb_char, text.text))
+                return # don't escape too much
+
+        # no available verbatim character
+        raise GenerateError("All verbatim characters used", text.start_pos, text.end_pos)
         
 class LatexSpacesGenerator(SpacesGenerator):
     def __init__(self):
