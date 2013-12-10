@@ -94,8 +94,9 @@ class LatexDocumentGenerator(DocumentGenerator):
 """
 %%% >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 %%% Tango: Beginning of top-level document
-\\begin{document}
-""")
+%%% Tango: File = '{}'
+\\begin{{document}}
+""".format(self.document.filename))
 
         super().generate()
 

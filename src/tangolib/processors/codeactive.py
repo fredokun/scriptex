@@ -12,7 +12,7 @@ from tangolib import markup
 
 class PythonContext:
     def __init__(self):
-        self.globals = dict()  # dictionnary of globals
+        self.globals = __builtins__ # dictionnary of globals
         self.pprint = pprint.PrettyPrinter()
         self.defs = dict()
 
