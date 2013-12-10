@@ -13,7 +13,7 @@ In particular it handles :
 import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
-from tangolib.markup import Document, Section, Command, Environment, Text, Newlines, Spaces
+from tangolib.markup import Document, Section, Command, Environment, Text, Newlines, Spaces, Preformated
 
 class ParseError(Exception):
     pass
@@ -58,7 +58,6 @@ REGEX_IDENT_STR = r"[a-zA-Z_][a-zA-Z_0-9]*"
 
 REGEX_PROTECTED = ere.ERegex(r"\\{|\\}") 
 
-#import pdb ; pdb.set_trace()
 REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.str_end()
 
 REGEX_ENV_HEADER = ere.ERegex(r"\\begin{([^}]+)}(?:\[([^\]]+)\])?")
@@ -80,6 +79,8 @@ REGEX_MDLIST_OPEN = ere.ERegex("(?:^{0}*\\n)+({0}+)([-+*\\d](?:\\.)?){0}".format
 #REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
 REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
 
+REGEX_INLINE_PREFORMATED = ere.ERegex("`([^`]*)`")
+
 # main parser class
 
 class Parser:
@@ -96,6 +97,7 @@ class Parser:
         self.recognizers.append(lexer.Regexp("include", REGEX_INCLUDE))
         self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
         self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
+        self.recognizers.append(lexer.Regexp("inline_preformated", REGEX_INLINE_PREFORMATED))
 
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
@@ -381,6 +383,14 @@ class Parser:
                 # loop if continue_closing == True
 
                 # and we're done
+
+            ###########################################
+            ### Inline preformated                  ###
+            ###########################################
+            elif tok.token_type == "inline_preformated":
+                unparsed_content.flush(current_element)
+                preformated = Preformated(doc, tok.value.group(1), "inline", tok.start_pos, tok.end_pos)
+                current_element.append(preformated)
 
             ###########################################
             ### Special characters (newlines, etc.) ###

@@ -254,5 +254,16 @@ this is in section \emph{subsection 2.2}
         # TODO: validate the result
 
         
+    def test_inline_preformated(self):
+        parser = Parser()
+
+        ret = parser.parse_from_string(r"""
+
+  The following is `inline preformated` and not the rest.
+
+""")
+
+        print("doc 11 = {}".format(ret))
+
 if __name__ == '__main__':
     unittest.main()
