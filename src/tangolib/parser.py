@@ -76,10 +76,14 @@ REGEX_SPACE = ere.ERegex(REGEX_SPACE_STR)
 REGEX_SPACES = ere.ERegex("({})+".format(REGEX_SPACE_STR))
 
 REGEX_MDLIST_OPEN = ere.ERegex("(?:^{0}*\\n)+({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
-#REGEX_MDLIST_ITEM_LAST = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}([^\\n]*)\\n{0}*\\n".format(REGEX_SPACE_STR))
 REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE_STR))
 
 REGEX_INLINE_PREFORMATED = ere.ERegex("`([^`]*)`")
+
+REGEX_EMPH_STAR = ere.ERegex(r"(\*)(?=[^*]*\*)")
+REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]*\*\*)")
+REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]*_)")
+REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]*__)")
 
 # main parser class
 
@@ -98,10 +102,13 @@ class Parser:
         self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
         self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("inline_preformated", REGEX_INLINE_PREFORMATED))
-
+        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_STAR))
+        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_UNDER))
+        self.recognizers.append(lexer.Regexp("strong", REGEX_STRONG_STAR))
+        self.recognizers.append(lexer.Regexp("strong", REGEX_STRONG_UNDER))
+    
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
-        #self.recognizers.append(lexer.Regexp("mdlist_item_last", REGEX_MDLIST_ITEM_LAST, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM, re_flags=ere.MULTILINE))
 
         self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
@@ -155,7 +162,30 @@ class Parser:
         while continue_parse:
             tok = lex.next_token()
             if tok is None:
-                unparsed_content.append_char(lex)
+                next_char = lex.peek_char()
+                # When closing an emphasis
+                if next_char in { '*', '_' } and current_element.markup_type == "command" \
+                   and current_element.cmd_name in { "emph" , "strong" }:
+                    
+                    if current_element.cmd_name == "emph":
+                        if current_element.cmd_opts['emph_type'] == next_char:
+                            lex.next_char() # consume
+                            unparsed_content.flush(current_element)
+                            current_element = element_stack.pop()
+                        else:
+                            unparsed_content.append_char(lex)
+                    elif current_element.cmd_name == "strong":
+                        if current_element.cmd_opts['strong_type'] == next_char:
+                            lex.next_chars(2) # consume two
+                            unparsed_content.flush(current_element)
+                            current_element = element_stack.pop()
+                        else:
+                            unparsed_content.append_char(lex)
+                    else:
+                        unparsed_content.append_char(lex)
+
+                else: # in the other case just append the character
+                    unparsed_content.append_char(lex)
  
             ###############################################
             ### End of input                            ###
@@ -391,6 +421,22 @@ class Parser:
                 unparsed_content.flush(current_element)
                 preformated = Preformated(doc, tok.value.group(1), "inline", tok.start_pos, tok.end_pos)
                 current_element.append(preformated)
+
+            ### Emphasis (normal) ###
+            elif tok.token_type == "emph":
+                unparsed_content.flush(current_element)
+                cmd = Command(doc, "emph", {'emph_type': tok.value.group(1) }, tok.start_pos, tok.end_pos)
+                current_element.append(cmd)
+                element_stack.append(current_element)
+                current_element = cmd
+
+            ### Strong emphasis ###
+            elif tok.token_type == "strong":
+                unparsed_content.flush(current_element)
+                cmd = Command(doc, "strong", {'strong_type': tok.value.group(1) }, tok.start_pos, tok.end_pos)
+                current_element.append(cmd)
+                element_stack.append(current_element)
+                current_element = cmd
 
             ###########################################
             ### Special characters (newlines, etc.) ###
