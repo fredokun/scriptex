@@ -102,10 +102,10 @@ class Parser:
         self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
         self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("inline_preformated", REGEX_INLINE_PREFORMATED))
-        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_STAR))
-        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_UNDER))
         self.recognizers.append(lexer.Regexp("strong", REGEX_STRONG_STAR))
         self.recognizers.append(lexer.Regexp("strong", REGEX_STRONG_UNDER))
+        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_STAR))
+        self.recognizers.append(lexer.Regexp("emph", REGEX_EMPH_UNDER))
     
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
@@ -424,6 +424,7 @@ class Parser:
 
             ### Emphasis (normal) ###
             elif tok.token_type == "emph":
+                import pdb; pdb.set_trace()
                 unparsed_content.flush(current_element)
                 cmd = Command(doc, "emph", {'emph_type': tok.value.group(1) }, tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
