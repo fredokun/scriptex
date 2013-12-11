@@ -80,10 +80,10 @@ REGEX_MDLIST_ITEM = ere.ERegex("^({0}+)([-+*\\d](?:\\.)?){0}".format(REGEX_SPACE
 
 REGEX_INLINE_PREFORMATED = ere.ERegex("`([^`]*)`")
 
-REGEX_EMPH_STAR = ere.ERegex(r"(\*)(?=[^*]*\*)")
-REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]*\*\*)")
-REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]*_)")
-REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]*__)")
+REGEX_EMPH_STAR = ere.ERegex(r"(\*)(?=[^*]+\*)")
+REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
+REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
+REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
 # main parser class
 
@@ -424,7 +424,6 @@ class Parser:
 
             ### Emphasis (normal) ###
             elif tok.token_type == "emph":
-                import pdb; pdb.set_trace()
                 unparsed_content.flush(current_element)
                 cmd = Command(doc, "emph", {'emph_type': tok.value.group(1) }, tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
