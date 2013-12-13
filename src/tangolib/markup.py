@@ -76,6 +76,11 @@ class Command(Markup):
         self.cmd_opts = cmd_opts
         self.header_end_pos = header_end_pos
         self.preformated = preformated
+        self.arguments = []
+
+    def add_argument(self, arg):
+        self.append(arg) # for standard content traversal
+        self.arguments.append(arg) # for indexed acccess to arguments
 
     def __repr__(self):
         return "Command(cmd_name={}, cmd_opts={}, preformated={}, content={})".format(self.cmd_name, self.cmd_opts, self.preformated, repr(self.content))
@@ -91,6 +96,21 @@ class Command(Markup):
         else:
             ret += self.content_toxml(indent_level + 1, indent_string)
         ret += (indent_string * indent_level) + "</command>\n"
+        return ret
+
+class CommandArg(Markup):
+    def __init__(self, doc, cmd, start_pos):
+        super().__init__(doc, "command_arg", start_pos, start_pos)
+        self.cmd = cmd
+
+    def __repr__(self):
+        return "CommandArg(cmd_name={}, content={})".format(self.cmd.cmd_name, repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<command_arg {} >\n'.format(self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + "</command_arg>\n"
         return ret
 
 class Environment(Markup):

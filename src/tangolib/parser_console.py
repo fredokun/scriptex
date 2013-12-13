@@ -24,7 +24,7 @@ def parse_line(line):
     try:
         result = p.parse_from_string(line)
         print(result)
-    except e:
+    except tangolib.parser.ParseError as e:
         print("Parsing failed:")
         print(e)
 

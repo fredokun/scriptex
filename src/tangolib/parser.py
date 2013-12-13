@@ -13,7 +13,8 @@ In particular it handles :
 import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
-from tangolib.markup import Document, Section, Command, Environment, Text, Newlines, Spaces, Preformated
+from tangolib.markup import Document, Section, Command, CommandArg, \
+    Environment, Text, Newlines, Spaces, Preformated
 
 class ParseError(Exception):
     pass
@@ -244,22 +245,54 @@ class Parser:
                 cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos)
                 current_element.append(cmd)
                 
-                ntok = lex.next_token()
+                # check if the command has at least an arguemnt
+                ntok = lex.next_token() 
                 if ntok is None:
-                    pass
+                    pass  # special case: no more tokens (last command)
                 elif ntok.token_type == "open_curly":
                     element_stack.append(current_element)
                     current_element = cmd
+                    lex.putback(ntok)  # need the bracket for argument parsing
                 else:
-                    lex.putback(ntok)
-            elif tok.token_type == "close_curly":
+                    lex.putback(ntok)  # command without argument
+
+            # start of argument  (or dummy bracket somewhere)
+            elif tok.token_type == "open_curly":
                 if current_element.markup_type == "command":
+                    # first argument
+                    cmd_arg = CommandArg(doc,current_element, tok.start_pos)
+                    current_element.add_argument(cmd_arg)
+                    element_stack.append(current_element)
+                    current_element = cmd_arg
+                else:
+                    # XXX: error ?
+                    # raise ParseError(tok.start_pos, tok.end_pos, "Unexpected opening curly bracket")
+                    unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+                    
+            # end of argument (or dummy bracket somewhere)
+            elif tok.token_type == "close_curly":
+                if current_element.markup_type == "command_arg":
                     unparsed_content.flush(current_element)
                     current_element.end_pos = tok.end_pos
-                    # Pop parent element
+                    # Pop parent element (command)
                     current_element = element_stack.pop()
+
+                    # check if the command has at least an arguemnt
+                    ntok = lex.next_token() 
+                    if ntok is None:
+                        current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
+                    elif ntok.token_type == "open_curly":
+                        # keep the command as current element
+                        lex.putback(ntok)  # need the bracket for argument parsing
+                    else:
+                        # pop the command
+                        current_element = element_stack.pop()
+                        lex.putback(ntok)  # command without argument
+
+
                 else:
                     unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
+
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
                 cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
