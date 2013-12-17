@@ -163,6 +163,8 @@ class Parser:
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
+        template_globals = __builtins__
+
         doc = Document(self.filename, lex)
         
         element_stack = []
@@ -288,21 +290,36 @@ class Parser:
                     # Pop parent element (command)
                     current_element = element_stack.pop()
 
+                    finished_command = None
+
                     # check if the command has at least an arguemnt
                     ntok = lex.next_token() 
                     if ntok is None:
+                        finished_command = current_element
                         current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
                     elif ntok.token_type == "open_curly":
                         # keep the command as current element
                         lex.putback(ntok)  # need the bracket for argument parsing
                     else:
+                        finished_command = current_element
                         # pop the command
                         current_element = element_stack.pop()
-                        lex.putback(ntok)  # command without argument
+                        lex.putback(ntok)  # command without more argument
 
+                    # special processing if command is user-defined
+                    if finished_command is not None:
+                        def_cmd = self.def_commands.get(finished_command.cmd_name)
+                        if def_cmd: # user-defined command
+                            # prepare templating environment
+                            tpl_env = template_globals.copy()
+                            ### TODO: finish to prepare rendering environment
 
                 else:
                     unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
+
+
+                 
+
 
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
@@ -485,8 +502,10 @@ class Parser:
             ######################################################
             ### Macros: commands and environments definitions  ###
             ######################################################
+            ### command definition
             elif tok.token_type == "def_cmd_header":
-                # command definition
+                unparsed_content.flush(current_element)
+
                 def_cmd_name = tok.value.group(1)
                 def_cmd_arity = tok.value.group(2)
                                 
@@ -520,13 +539,15 @@ class Parser:
                                                 escape_block_close='}',
                                                 escape_emit_function='emit',
                                                 filename='<defCommand:{}>'.format(def_cmd_name),
-                                                base_pos=def_cmd_lex_start_pos)
+                                                base_pos=def_cmd_lex_start_pos).compile()
 
                 # register the command
                 self.def_commands[def_cmd_name] = DefCommand(def_cmd_name, def_cmd_arity, def_cmd_tpl)
 
+            ### environment definition
             elif tok.token_type == "def_env_header":
-                # environment definition
+                unparsed_content.flush(current_element)
+
                 def_env_name = tok.value.group(1)
 
                 tok2 = lex.next_token()
@@ -561,7 +582,7 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_cmd_lex_start_pos)
+                                                       base_pos=def_cmd_lex_start_pos).compile()
 
                 # prepare the template string for the footer part
                 def_env_footer_lex_start_pos = lex.pos()
@@ -590,7 +611,7 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_cmd_lex_start_pos)
+                                                       base_pos=def_cmd_lex_start_pos).compile()
 
                 # register the environement
                 self.def_environments[def_env_name] = DefEnvironment(def_env_name, def_env_header_tpl, def_env_footer_tpl)
