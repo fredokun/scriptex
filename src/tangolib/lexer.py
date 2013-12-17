@@ -17,6 +17,12 @@ class ParsePosition:
     def next_char(self, delta=1):
         return ParsePosition(self.lpos, self.cpos + delta, self.offset + delta)
 
+    def prev_char(self):
+        return Position(self.line_pos, self.char_pos - 1, self.offset - 1)
+
+    def next_line(self):
+        return Position(self.line_pos + 1, 1, self.offset + 1)
+
     def __repr__(self):
         return "ParsePosition(lpos={0}, cpos={1}, offset={2})"\
             .format(self.lpos, self.cpos, self.offset)

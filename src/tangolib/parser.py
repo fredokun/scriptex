@@ -16,6 +16,8 @@ import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, CommandArg, \
     Environment, Text, Newlines, Spaces, Preformated
 
+import tangolib.template as template
+
 class ParseError(Exception):
     pass
 
@@ -86,17 +88,26 @@ REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
 REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
+REGEX_DEF_COMMAND_HEADER = ere.ERegex(r"\\defCommand{(\\" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
+REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
+
 # main parser class
 
 class Parser:
     def __init__(self):
         self.recognizers = []
         self.prepare_recognizers()
+        self.def_commands = dict() # dictionary for defined commands
+        self.def_environments = dict() # dictionary for defined environments
 
     def prepare_recognizers(self):
         self.recognizers.append(lexer.Regexp("protected", REGEX_PROTECTED))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
         self.recognizers.append(lexer.Regexp("line_comment", REGEX_LINE_COMMENT))
+
+        self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER))
+        self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER))
+
         self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
         self.recognizers.append(lexer.Regexp("include", REGEX_INCLUDE))
@@ -471,6 +482,121 @@ class Parser:
                 element_stack.append(current_element)
                 current_element = cmd
 
+            ######################################################
+            ### Macros: commands and environments definitions  ###
+            ######################################################
+            elif tok.token_type == "def_cmd_header":
+                # command definition
+                def_cmd_name = tok.value.group(1)
+                def_cmd_arity = tok.value.group(2)
+                                
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defCommand body")
+
+                # prepare the template string
+                def_cmd_lex_start_pos = lex.pos()
+                def_cmd_lex_str = ""
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = lex.next_char()
+                    if ch is None:
+                        raise ParseError(def_cmd_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defCommand body")
+                    elif ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_cmd_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_cmd_lex_str += ch
+
+                def_cmd_tpl = Template.template(def_cmd_lex_str,
+                                                safe_mode = False,
+                                                escape_var='#',
+                                                escape_inline='@',
+                                                escape_block='@',
+                                                escape_block_open='{',
+                                                escape_block_close='}',
+                                                escape_emit_function='emit',
+                                                filename='<defCommand:{}>'.format(def_cmd_name),
+                                                base_pos=def_cmd_lex_start_pos)
+
+                # register the command
+                self.def_commands[def_cmd_name] = DefCommand(def_cmd_name, def_cmd_arity, def_cmd_tpl)
+
+            elif tok.token_type == "def_env_header":
+                # environment definition
+                def_env_name = tok.value.group(1)
+
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defEnvironment header body")
+
+
+                # prepare the template string for the header part
+                def_env_header_lex_start_pos = lex.pos()
+                def_env_header_lex_str = ""
+
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = lex.next_char()
+                    if ch is None:
+                        raise ParseError(def_env_header_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defEnvironment header body")
+                    elif ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_env_header_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_env_header_lex_str += ch
+                    
+                def_env_header_tpl = Template.template(def_env_header_lex_str,
+                                                       safe_mode=False,
+                                                       escape_var='#',
+                                                       escape_inline='@',
+                                                       escape_block='@',
+                                                       escape_block_open='{',
+                                                       escape_block_close='}',
+                                                       escape_emit_function='emit',
+                                                       filename='<defEnvironment:{}>'.format(def_env_name),
+                                                       base_pos=def_cmd_lex_start_pos)
+
+                # prepare the template string for the footer part
+                def_env_footer_lex_start_pos = lex.pos()
+                def_env_footer_lex_str = ""
+
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = lex.next_char()
+                    if ch is None:
+                        raise ParseError(def_env_footer_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defEnvironment footer body")
+                    elif ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_env_footer_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_env_footer_lex_str += ch
+                    
+                def_env_footer_tpl = Template.template(def_env_footer_lex_str,
+                                                       safe_mode=False,
+                                                       escape_var='#',
+                                                       escape_inline='@',
+                                                       escape_block='@',
+                                                       escape_block_open='{',
+                                                       escape_block_close='}',
+                                                       escape_emit_function='emit',
+                                                       filename='<defEnvironment:{}>'.format(def_env_name),
+                                                       base_pos=def_cmd_lex_start_pos)
+
+                # register the environement
+                self.def_environments[def_env_name] = DefEnvironment(def_env_name, def_env_header_tpl, def_env_footer_tpl)
+            
+
+
             ###########################################
             ### Special characters (newlines, etc.) ###
             ###########################################
@@ -551,3 +677,19 @@ class Parser:
         f.close()
         doc = self.parse_from_string(input, filename)
         return doc
+
+
+
+class DefCommand:
+    def __init__(self, cmd_name, cmd_arity, cmd_template):
+        self.cmd_name = cmd_name
+        self.cmd_arity = cmd_arity
+        self.cmd_template = cmd_template
+
+
+class DefEnvironment:
+    def __init__(self, env_name, env_header_tpl, env_footer_tpl):
+        self.env_name = env_name
+        self.env_header_tpl = env_header_tpl
+        self.env_footer_tpl = env_footer_tpl
+

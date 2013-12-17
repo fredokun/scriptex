@@ -3,6 +3,8 @@
 
 import ast
 
+from lexer import ParsePosition
+
 class TemplateCompileError(Exception):
     def __init__(self, msg, template, start_pos, end_pos):
         super().__init__(msg)
@@ -16,27 +18,6 @@ class TemplateRenderError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
-class Position:
-    def __init__(self, line_pos=1, char_pos=1, offset=0):
-        self.line_pos = line_pos
-        self.char_pos = char_pos
-        self.offset = offset
-
-    def next_char(self):
-        return Position(self.line_pos, self.char_pos + 1, self.offset + 1)
-
-    def prev_char(self):
-        return Position(self.line_pos, self.char_pos - 1, self.offset - 1)
-
-    def next_line(self):
-        return Position(self.line_pos + 1, 1, self.offset + 1)
-
-    def __repr__(self):
-        return "Position(line_pos={}, char_pos={}, offset={})".format(self.line_pos, self.char_pos, self.offset)
-
-    def __str__(self):
-        return repr(self)
-
 class Template:
     def __init__(self, 
                  template, 
@@ -44,7 +25,7 @@ class Template:
                  escape_var="$", escape_inline="%", escape_block="%", escape_block_open="{", escape_block_close="}",
                  escape_emit_function="emit",
                  filename='<unknown>',
-                 base_line_pos=0):
+                 base_pos=None):
         assert escape_var != escape_inline, "Require distinct escape variable"
         assert escape_var != escape_block, "Require distinct escape variable"
         assert escape_block_open != escape_inline, "Require distinct escape block open"
@@ -58,7 +39,10 @@ class Template:
         self.escape_block = escape_block
         self.escape_block_open = escape_block_open
         self.escape_block_close = escape_block_close
-        self.base_line_pos = base_line_pos
+        if base_pos is None:
+           self.base_pos = ParsePosition()
+       else:
+           self.base_pos = base_pos
         self.escape_emit_function = escape_emit_function
         self.safe_mode = safe_mode
         self.ctemplate = None
@@ -96,7 +80,7 @@ class Template:
         len_template = len(self.template)
         self.ctemplate = []
 
-        start_pos = Position(1,self.base_line_pos,0)
+        start_pos = self.base_pos
         current_pos = start_pos
 
         part = ""
@@ -155,7 +139,7 @@ class Template:
                 continue_parse = False
             else:
                 current_char = self.template[current_pos.offset]
-                if current_char != ' ' and current_char.isprintable():
+                if (not current_char.isspace()) and current_char.isprintable():
                     ident += current_char
                     current_pos = current_pos.next_char()
                 else: # a space or non-printable character
@@ -164,12 +148,15 @@ class Template:
         # end of while
         ident_prefix = ident
         prefix_pos = current_pos
-        while ident_prefix != "" and not ident_prefix.isidentifier():
+        while ident_prefix != "" and not ident_prefix.isidentifier() and not ident_prefix.isdecimal():
             ident_prefix = ident_prefix[:-1]
             prefix_pos = prefix_pos.prev_char()
 
         if ident_prefix == "":
             raise TemplateCompileError("Not a variable identifier: '{}'".format(ident), self.template, start_pos, current_pos)
+        elif ident_prefix.isdecimal():
+            ident_prefix = '_' + ident_prefix # '_n' with n decimal is a correct variable name in python
+        # nothing to do if isidentifier()
 
         ident = ident_prefix
         current_pos = prefix_pos
