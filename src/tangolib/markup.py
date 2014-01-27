@@ -42,6 +42,8 @@ class Document(Markup):
         super().__init__(None, "document", lex.pos, None)
         self.filename = filename
         self.lex = lex
+        self.def_commands = dict() # dictionary for defined commands
+        self.def_environments = dict() # dictionary for defined environments
 
     def __repr__(self):
         return "Document(content={})".format(repr(self.content))

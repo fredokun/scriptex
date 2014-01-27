@@ -3,7 +3,7 @@
 
 import ast
 
-from lexer import ParsePosition
+from tangolib.lexer import ParsePosition
 
 class TemplateCompileError(Exception):
     def __init__(self, msg, template, start_pos, end_pos):
@@ -40,9 +40,9 @@ class Template:
         self.escape_block_open = escape_block_open
         self.escape_block_close = escape_block_close
         if base_pos is None:
-           self.base_pos = ParsePosition()
-       else:
-           self.base_pos = base_pos
+            self.base_pos = ParsePosition()
+        else:
+            self.base_pos = base_pos
         self.escape_emit_function = escape_emit_function
         self.safe_mode = safe_mode
         self.ctemplate = None

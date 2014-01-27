@@ -97,8 +97,6 @@ class Parser:
     def __init__(self):
         self.recognizers = []
         self.prepare_recognizers()
-        self.def_commands = dict() # dictionary for defined commands
-        self.def_environments = dict() # dictionary for defined environments
 
     def prepare_recognizers(self):
         self.recognizers.append(lexer.Regexp("protected", REGEX_PROTECTED))
@@ -316,10 +314,6 @@ class Parser:
 
                 else:
                     unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
-
-
-                 
-
 
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
@@ -542,7 +536,7 @@ class Parser:
                                                 base_pos=def_cmd_lex_start_pos).compile()
 
                 # register the command
-                self.def_commands[def_cmd_name] = DefCommand(def_cmd_name, def_cmd_arity, def_cmd_tpl)
+                doc.def_commands[def_cmd_name] = DefCommand(def_cmd_name, def_cmd_arity, def_cmd_tpl)
 
             ### environment definition
             elif tok.token_type == "def_env_header":
@@ -614,7 +608,7 @@ class Parser:
                                                        base_pos=def_cmd_lex_start_pos).compile()
 
                 # register the environement
-                self.def_environments[def_env_name] = DefEnvironment(def_env_name, def_env_header_tpl, def_env_footer_tpl)
+                doc.def_environments[def_env_name] = DefEnvironment(def_env_name, def_env_header_tpl, def_env_footer_tpl)
             
 
 
