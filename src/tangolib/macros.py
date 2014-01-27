@@ -24,7 +24,7 @@ class DefCommand:
 
         # second: template rendering
         tpl_env = dict()
-        for arg_num in range(1,self.cmd_arity+1)):
+        for arg_num in range(1,self.cmd_arity+1):
             tpl_env[str(arg_num)] = r"\macroCommandArgument[0]"
 
         result_to_parse = self.cmd_template.render(tpl_env)

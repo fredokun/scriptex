@@ -90,7 +90,7 @@ REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
 REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
-REGEX_DEF_COMMAND_HEADER = ere.ERegex(r"\\defCommand{(\\" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
+REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{(\\" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
 REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
@@ -174,7 +174,10 @@ class Parser:
         continue_parse = True
         unparsed_content = Parser.UnparsedContent()
 
+        lex = doc.lex
+
         while continue_parse:
+
             tok = lex.next_token()
             if tok is None:
                 next_char = lex.peek_char()
@@ -511,13 +514,13 @@ class Parser:
                     raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defCommand body")
 
                 # prepare the template string
-                def_cmd_lex_start_pos = lex.pos()
+                def_cmd_lex_start_pos = lex.pos
                 def_cmd_lex_str = ""
                 nb_curly = 1
                 while nb_curly > 0:
                     ch = lex.next_char()
                     if ch is None:
-                        raise ParseError(def_cmd_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defCommand body")
+                        raise ParseError(def_cmd_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defCommand body")
                     elif ch == '}':
                         nb_curly -= 1
                         if nb_curly > 0:
@@ -527,7 +530,7 @@ class Parser:
                             nb_curly += 1
                         def_cmd_lex_str += ch
 
-                def_cmd_tpl = Template.template(def_cmd_lex_str,
+                def_cmd_tpl = template.Template(def_cmd_lex_str,
                                                 safe_mode = False,
                                                 escape_var='#',
                                                 escape_inline='@',
@@ -563,14 +566,14 @@ class Parser:
 
 
                 # prepare the template string for the header part
-                def_env_header_lex_start_pos = lex.pos()
+                def_env_header_lex_start_pos = lex.pos
                 def_env_header_lex_str = ""
 
                 nb_curly = 1
                 while nb_curly > 0:
                     ch = lex.next_char()
                     if ch is None:
-                        raise ParseError(def_env_header_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defEnvironment header body")
+                        raise ParseError(def_env_header_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment header body")
                     elif ch == '}':
                         nb_curly -= 1
                         if nb_curly > 0:
@@ -580,7 +583,7 @@ class Parser:
                             nb_curly += 1
                         def_env_header_lex_str += ch
                     
-                def_env_header_tpl = Template.template(def_env_header_lex_str,
+                def_env_header_tpl = template.Template(def_env_header_lex_str,
                                                        safe_mode=False,
                                                        escape_var='#',
                                                        escape_inline='@',
@@ -592,14 +595,14 @@ class Parser:
                                                        base_pos=def_cmd_lex_start_pos).compile()
 
                 # prepare the template string for the footer part
-                def_env_footer_lex_start_pos = lex.pos()
+                def_env_footer_lex_start_pos = lex.pos
                 def_env_footer_lex_str = ""
 
                 nb_curly = 1
                 while nb_curly > 0:
                     ch = lex.next_char()
                     if ch is None:
-                        raise ParseError(def_env_footer_lex_start_pos, lex.pos(), "Unexpected end of input while parsing \\defEnvironment footer body")
+                        raise ParseError(def_env_footer_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment footer body")
                     elif ch == '}':
                         nb_curly -= 1
                         if nb_curly > 0:
@@ -609,7 +612,7 @@ class Parser:
                             nb_curly += 1
                         def_env_footer_lex_str += ch
                     
-                def_env_footer_tpl = Template.template(def_env_footer_lex_str,
+                def_env_footer_tpl = template.Template(def_env_footer_lex_str,
                                                        safe_mode=False,
                                                        escape_var='#',
                                                        escape_inline='@',
