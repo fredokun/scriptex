@@ -55,8 +55,15 @@ class DocumentProcessor:
         while self.markup_stack:
             self.markup, self.content_index, self.source_markup, self.source_index = self.markup_stack.pop()
             if self.content_index == -1: # command/env not processed
+                ### COMMANDS: entering processor
                 if self.markup.markup_type == "command":
-                    if self.markup.cmd_name in self.cmd_processors:
+                    # First case: macro-command
+                    if self.markup.cmd_name in self.document.def_commands:
+                        new_content = self.document.def_commands[self.markup.cmd_name].process(self.document, self.markup)
+                        self.markup_stack.append(new_content, -1, self.source_markup, self.source_index)
+                        self.source_markup.content[self.source_index] = new_content
+                    # Second case : normal command
+                    elif self.markup.cmd_name in self.cmd_processors:
                         self.cmd_processors[self.markup.cmd_name].enter_command(self, self.markup)
                     if self.markup.preformated:
                         if self.markup.cmd_name in self.cmd_processors:
@@ -69,7 +76,11 @@ class DocumentProcessor:
                                 self.source_markup.content[self.source_index] = new_content
                     else:
                         self.command_stack.append(self.markup)
+                ### ENVIRONMENTS: entering processor
                 elif self.markup.markup_type == "environment":
+                    # First case : macro-environment
+                    # ... TODO ...
+                    # Second case: normal environment
                     if self.markup.env_name in self.env_processors:
                         self.env_processors[self.markup.env_name].enter_environment(self, self.markup)
                     self.environment_stack.append(self.markup)
@@ -85,6 +96,7 @@ class DocumentProcessor:
             else: # processing of markup already started
                 if self.content_index == len(self.markup.content):
                     # done processing content
+                    ### COMMANDS: leaving processing
                     if self.markup.markup_type == "command":
                         check_cmd = self.command_stack.pop()
                         assert check_cmd == self.markup,  "invalid command stack (please report)"
@@ -94,6 +106,7 @@ class DocumentProcessor:
                                 if recursive:
                                     self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                                 self.source_markup.content[self.source_index] = new_content
+                    ### ENVIRONMENTS: leaving processing
                     elif self.markup.markup_type == "environment":
                         check_env = self.environment_stack.pop()
                         assert check_env == self.markup,  "invalid environment stack (please report)"

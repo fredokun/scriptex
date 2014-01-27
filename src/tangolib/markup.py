@@ -42,8 +42,22 @@ class Document(Markup):
         super().__init__(None, "document", lex.pos, None)
         self.filename = filename
         self.lex = lex
-        self.def_commands = dict() # dictionary for defined commands
-        self.def_environments = dict() # dictionary for defined environments
+        self.def_commands_ = dict() # dictionary for defined commands
+        self.def_environments_ = dict() # dictionary for defined environments
+
+    def register_def_command(self, cmd_name, cmd_arity, cmd_template):
+        self.def_commands_[cmd_name] = DefCommand(cmd_name, cmd_arity, cmd_template)
+
+    def register_def_environment(self, env_name, env_header_template, env_footer_template):
+        self.def_environments_[env_name] = DefEnvironment(env_name, env_header_template, env_footer_template)
+
+    @property
+    def def_commands(self):
+        return self.def_commands_
+
+    @property
+    def def_environments(self):
+        return self.def_environments_
 
     def __repr__(self):
         return "Document(content={})".format(repr(self.content))
@@ -55,13 +69,31 @@ class Document(Markup):
         ret += (indent_string * indent_level) + '</document>\n'
         return ret
 
-class SubDocument(Markup):
+class SubDocument(Document):
     def __init__(self, parent_doc, filename, start_pos, sublex):
-        super().__init__(parent_doc, "subdoc", start_pos, None)
-        self.filename = filename
+        super().__init__(filename, sublex)
+        self.doc = parent_doc
+        self.markup_type = "subdoc"
+        self.start_pos = start_pos
         self.sublex = sublex
-        self.def_commands = dict() # dictionary for defined commands
-        self.def_environments = dict() # dictionary for defined environments
+
+    def __repr__(self):
+        return "SubDocument(content={})".format(repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<subdoc filename="{}" {}>\n'.format(self.filename, self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + '</subdoc>\n'
+        return ret
+
+class MacroCommandDocument(Document):
+    def __init__(self, parent_doc, filename, start_pos, sublex):
+        super().__init__(filename, sublex)
+        self.doc = parent_doc
+        self.markup_type = "subdoc"
+        self.start_pos = start_pos
+        self.sublex = sublex
 
     def __repr__(self):
         return "SubDocument(content={})".format(repr(self.content))

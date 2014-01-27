@@ -18,6 +18,8 @@ from tangolib.markup import Document, Section, Command, CommandArg, \
 
 import tangolib.template as template
 
+from tangolib.macros import DefCommand, DefEnvironment
+
 class ParseError(Exception):
     pass
 
@@ -90,6 +92,7 @@ REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
 REGEX_DEF_COMMAND_HEADER = ere.ERegex(r"\\defCommand{(\\" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
 REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
+REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
 # main parser class
 
@@ -105,6 +108,8 @@ class Parser:
 
         self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER))
+
+        self.recognizers.append(lexer.Regexp("macro_cmd_arg", REGEX_MACRO_CMD_ARG))
 
         self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
@@ -157,14 +162,12 @@ class Parser:
         def __repr__(self):
             return "UnparsedContent({},start_pos={},end_pos={})".format(repr(self.content), self.start_pos, self.end_pos)
         
-    def parse(self, lex):
+    def parse(self, doc, macro_cmd_arguments=None):
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
         template_globals = __builtins__
 
-        doc = Document(self.filename, lex)
-        
         element_stack = []
 
         current_element = doc
@@ -306,7 +309,7 @@ class Parser:
 
                     # special processing if command is user-defined
                     if finished_command is not None:
-                        def_cmd = self.def_commands.get(finished_command.cmd_name)
+                        def_cmd = doc.def_commands.get(finished_command.cmd_name)
                         if def_cmd: # user-defined command
                             # prepare templating environment
                             tpl_env = template_globals.copy()
@@ -536,7 +539,17 @@ class Parser:
                                                 base_pos=def_cmd_lex_start_pos).compile()
 
                 # register the command
-                doc.def_commands[def_cmd_name] = DefCommand(def_cmd_name, def_cmd_arity, def_cmd_tpl)
+                doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)
+
+            ### macro-command argument
+            elif tok.token_type == "macro_cmd_arg":
+                unparsed_content.flush(current_element)
+                arg_num = int(tok.value.group(1))
+                command_arg_markup = macro_cmd_arguments[arg_num]
+                current_element.append(command_arg_markup)
+                elemnt_stack.append(current_element)
+                current_element = command_arg_markup
+                
 
             ### environment definition
             elif tok.token_type == "def_env_header":
@@ -678,13 +691,17 @@ class Parser:
         # preparsing finished
         return doc
 
-            
-    def parse_from_string(self, input, filename="<string>"):
-        self.filename = filename
+
+    def prepare_string_lexer(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
         lex = lexer.Lexer(tokens, *self.recognizers)
-
-        return self.parse(lex)
+        return lex
+        
+    def parse_from_string(self, input, filename="<string>"):
+        self.filename = filename
+        lex = self.prepare_string_lexer(input)
+        doc = Document(self.filename, lex)            
+        return self.parse(doc)
 
     def parse_from_file(self, filename):
         f = open(filename, "r")
@@ -692,19 +709,4 @@ class Parser:
         f.close()
         doc = self.parse_from_string(input, filename)
         return doc
-
-
-
-class DefCommand:
-    def __init__(self, cmd_name, cmd_arity, cmd_template):
-        self.cmd_name = cmd_name
-        self.cmd_arity = cmd_arity
-        self.cmd_template = cmd_template
-
-
-class DefEnvironment:
-    def __init__(self, env_name, env_header_tpl, env_footer_tpl):
-        self.env_name = env_name
-        self.env_header_tpl = env_header_tpl
-        self.env_footer_tpl = env_footer_tpl
 
