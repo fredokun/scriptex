@@ -60,6 +60,8 @@ class SubDocument(Markup):
         super().__init__(parent_doc, "subdoc", start_pos, None)
         self.filename = filename
         self.sublex = sublex
+        self.def_commands = dict() # dictionary for defined commands
+        self.def_environments = dict() # dictionary for defined environments
 
     def __repr__(self):
         return "SubDocument(content={})".format(repr(self.content))
