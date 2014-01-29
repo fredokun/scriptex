@@ -175,7 +175,7 @@ if __name__ == "__main__":
     if enable_write_phase:
 
         if args.latex:
-            output_mode_dir = "latex"
+            output_mode_dir = "tex"
            
         output_directory = args.output_dir + "/" + output_mode_dir
  
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
         main_output_filename = output_directory + "/" + infile_without_ext + "-gen." + output_mode_dir
 
-        tangoPrintln,("Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
+        tangoPrintln("Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
 
         main_output_file = open(main_output_filename, 'w')
         main_output_file.write(str(generator.output))
