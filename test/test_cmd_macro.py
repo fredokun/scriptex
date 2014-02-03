@@ -16,7 +16,6 @@ class TestCommandMacro(unittest.TestCase):
     def test_macro_simple_text(self):
         parser = Parser()
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         doc = parser.parse_from_string(r"""
 
 % macro definition
@@ -31,6 +30,7 @@ Hello \hello
 
         processor = DocumentProcessor(doc)
 
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         processor.process()
 
         print("simple_text (after expansion) = {}".format(doc))

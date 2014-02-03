@@ -57,10 +57,11 @@ class DocumentProcessor:
             if self.content_index == -1: # command/env not processed
                 ### COMMANDS: entering processor
                 if self.markup.markup_type == "command":
+
                     # First case: macro-command
                     if self.markup.cmd_name in self.document.def_commands:
                         new_content = self.document.def_commands[self.markup.cmd_name].process(self.document, self.markup)
-                        self.markup_stack.append(new_content, -1, self.source_markup, self.source_index)
+                        self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                         self.source_markup.content[self.source_index] = new_content
                     # Second case : normal command
                     elif self.markup.cmd_name in self.cmd_processors:

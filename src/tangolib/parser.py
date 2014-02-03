@@ -90,7 +90,7 @@ REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
 REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
-REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{(\\" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
+REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
 REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
@@ -211,7 +211,7 @@ class Parser:
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
 
-                while current_element.markup_type not in { "document", "subdoc" }:
+                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc" }:
                     if current_element.markup_type == "command":
                         raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
                     elif current_element.markup_type == "environment":
@@ -507,7 +507,7 @@ class Parser:
                 unparsed_content.flush(current_element)
 
                 def_cmd_name = tok.value.group(1)
-                def_cmd_arity = tok.value.group(2)
+                def_cmd_arity = int(tok.value.group(2))
                                 
                 tok2 = lex.next_token()
                 if tok2.token_type != "open_curly":
@@ -530,6 +530,7 @@ class Parser:
                             nb_curly += 1
                         def_cmd_lex_str += ch
 
+
                 def_cmd_tpl = template.Template(def_cmd_lex_str,
                                                 safe_mode = False,
                                                 escape_var='#',
@@ -539,7 +540,9 @@ class Parser:
                                                 escape_block_close='}',
                                                 escape_emit_function='emit',
                                                 filename='<defCommand:{}>'.format(def_cmd_name),
-                                                base_pos=def_cmd_lex_start_pos).compile()
+                                                base_pos=def_cmd_lex_start_pos)
+
+                def_cmd_tpl.compile()
 
                 # register the command
                 doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)

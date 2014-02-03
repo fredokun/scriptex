@@ -2,6 +2,8 @@
   Macro-processing
 """
 
+from tangolib.markup import MacroCommandDocument
+
 class MacroError(Exception):
     pass
 
@@ -15,6 +17,8 @@ class DefCommand:
         self.cmd_template = cmd_template
 
     def process(self, document, command):
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        
         # first: check arity
         if len(command.arguments) != self.cmd_arity:
             raise MacroError("Wrong macro-command arity: expected {} but given {} argument{}",
@@ -30,12 +34,13 @@ class DefCommand:
         result_to_parse = self.cmd_template.render(tpl_env)
         
         # third: recursive parsing of template result
+        from tangolib.parser import Parser
         parser = Parser()
 
-        lex = parse.prepare_string_lexer(result_to_parse)
+        lex = parser.prepare_string_lexer(result_to_parse)
         doc = MacroCommandDocument(document, "<<<MacroCommand:{}>>>".format(self.cmd_name), self.cmd_start_pos, self.cmd_end_pos, lex)
         
-        result_parsed = self.parse(doc, macro_cmd_arguments=command.arguments)
+        result_parsed = parser.parse(doc, macro_cmd_arguments=command.arguments)
 
         return result_parsed
 

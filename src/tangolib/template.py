@@ -81,35 +81,37 @@ class Template:
         self.ctemplate = []
 
         start_pos = self.base_pos
+        initial_offset = start_pos.offset
         current_pos = start_pos
 
+
         part = ""
-        while current_pos.offset < len_template:
-            current_char = self.template[current_pos.offset]
+        while current_pos.offset - initial_offset < len_template:
+            current_char = self.template[current_pos.offset - initial_offset]
             if current_char == '\n':
                 current_pos = current_pos.next_line()
                 part += current_char
-            elif current_char == self.escape_var and current_pos.offset + 1 < len_template \
-                 and self.template[current_pos.offset+1] != self.escape_var:
+            elif current_char == self.escape_var and current_pos.offset - initial_offset + 1 < len_template \
+                 and self.template[current_pos.offset - initial_offset + 1] != self.escape_var:
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
-                start_pos = self._parse_variable(start_pos)
+                start_pos = self._parse_variable(start_pos, initial_offset)
                 current_pos = start_pos
-            elif current_char == self.escape_inline and (current_pos.offset + 1 >= len_template \
-                 or (self.template[current_pos.offset+1] != self.escape_inline \
-                 and self.template[current_pos.offset+1] != self.escape_block_open)):
+            elif current_char == self.escape_inline and (current_pos.offset  - initial_offset + 1 >= len_template \
+                 or (self.template[current_pos.offset - initial_offset + 1] != self.escape_inline \
+                 and self.template[current_pos.offset - initial_offset + 1] != self.escape_block_open)):
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
-                start_pos = self._parse_escape_inline(start_pos)
+                start_pos = self._parse_escape_inline(start_pos, initial_offset)
                 current_pos = start_pos
-            elif current_char == self.escape_block and (current_pos.offset + 1 >= len_template \
-                 or self.template[current_pos.offset+1] == self.escape_block_open):
+            elif current_char == self.escape_block and (current_pos.offset - initial_offset + 1 >= len_template \
+                 or self.template[current_pos.offset - initial_offset + 1] == self.escape_block_open):
                 self._register_literal(part, start_pos, current_pos)
                 part = ""
                 start_pos = current_pos
-                start_pos = self._parse_escape_block(start_pos)
+                start_pos = self._parse_escape_block(start_pos, initial_offset)
                 current_pos = start_pos
             else: # a literal character
                 part += current_char
@@ -126,8 +128,8 @@ class Template:
     def _register_literal(self, literal, start_pos, end_pos):
         self.ctemplate.append(Template.Literal(self, literal, start_pos, end_pos))
 
-    def _parse_variable(self, start_pos):
-        assert self.template[start_pos.offset] == self.escape_var
+    def _parse_variable(self, start_pos, initial_offset):
+        assert self.template[start_pos.offset - initial_offset] == self.escape_var
 
         len_template = len(self.template)
 
@@ -135,10 +137,10 @@ class Template:
         ident = ""
         continue_parse = True
         while continue_parse:
-            if current_pos.offset >= len_template:
+            if current_pos.offset  - initial_offset >= len_template:
                 continue_parse = False
             else:
-                current_char = self.template[current_pos.offset]
+                current_char = self.template[current_pos.offset - initial_offset]
                 if (not current_char.isspace()) and current_char.isprintable():
                     ident += current_char
                     current_pos = current_pos.next_char()
@@ -165,8 +167,8 @@ class Template:
 
         return current_pos
 
-    def _parse_escape_inline(self, start_pos):
-        assert self.template[start_pos.offset] == self.escape_inline
+    def _parse_escape_inline(self, start_pos, initial_offset):
+        assert self.template[start_pos.offset - initial_offset] == self.escape_inline
         
         len_template = len(self.template)
 
@@ -174,12 +176,12 @@ class Template:
         inline_code = ""
         continue_parse = True
         while continue_parse:
-            if current_pos.offset >= len_template:
+            if current_pos.offset  - initial_offset >= len_template:
                 raise TemplateCompileError("Unexpected end of template within inline block (missing closing {})".format(self.escape_inline),
                                            self.template, start_pos, current_pos)
-            current_char = self.template[current_pos.offset]
-            if current_char == self.escape_inline and (current_pos.offset + 1 >= len_template \
-                                                       or self.template[current_pos.offset+1] != self.escape_inline):
+            current_char = self.template[current_pos.offset - initial_offset]
+            if current_char == self.escape_inline and (current_pos.offset - initial_offset + 1 >= len_template \
+                                                       or self.template[current_pos.offset - initial_offset + 1] != self.escape_inline):
                 # end of inline block
                 current_pos = current_pos.next_char()
                 continue_parse = False
@@ -198,9 +200,9 @@ class Template:
 
         return current_pos
 
-    def _parse_escape_block(self, start_pos):
-        assert self.template[start_pos.offset] == self.escape_block
-        assert self.template[start_pos.offset + 1] == self.escape_block_open
+    def _parse_escape_block(self, start_pos, initial_offset):
+        assert self.template[start_pos.offset - initial_offset] == self.escape_block
+        assert self.template[start_pos.offset - initial_offset + 1] == self.escape_block_open
         
         len_template = len(self.template)
 
@@ -208,13 +210,13 @@ class Template:
         block_code = ""
         continue_parse = True
         while continue_parse:
-            if current_pos.offset >= len_template:
+            if current_pos.offset - initial_offset >= len_template:
                 raise TemplateCompileError("Unexpected end of template within block block (missing closing {}{})".format(self.escape_block, self.escape_block_close),
                                            self.template, start_pos, current_pos)
-            current_char = self.template[current_pos.offset]
+            current_char = self.template[current_pos.offset - initial_offset]
             if current_char == self.escape_block \
-            and (current_pos.offset + 1 < len_template \
-                 and self.template[current_pos.offset+1] == self.escape_block_close):
+            and (current_pos.offset - initial_offset + 1 < len_template \
+                 and self.template[current_pos.offset - initial_offset + 1] == self.escape_block_close):
                 # end of block block
                 current_pos = current_pos.next_char().next_char()
                 continue_parse = False
