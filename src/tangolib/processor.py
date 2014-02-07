@@ -72,7 +72,7 @@ class DocumentProcessor:
                         if self.markup.cmd_name in self.cmd_processors:
                             new_content, recursive = self.cmd_processors[self.markup.cmd_name].process_command(self, self.markup)
                             if new_content is None:
-                                self.source_markup.content[self.source_index] = markup.SkipMarkup(self.markup.start_pos, self.markup.end_pos)
+                                self.source_markup.content[self.source_index] = SkipMarkup(self.markup.start_pos, self.markup.end_pos)
                             else: # new content
                                 if recursive:
                                     self.markup_stack.append(new_content, -1, self.source_markup, self.source_index)
