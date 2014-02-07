@@ -166,8 +166,6 @@ class Parser:
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
-        template_globals = __builtins__
-
         element_stack = []
 
         current_element = doc
