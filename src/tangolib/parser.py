@@ -311,11 +311,12 @@ class Parser:
                         lex.putback(ntok)  # command without more argument
 
                     # special processing if command is user-defined
-                    if finished_command is not None:
-                        def_cmd = doc.def_commands.get(finished_command.cmd_name)
-                        if def_cmd: # user-defined command
-                            # prepare templating environment
-                            tpl_env = template_globals.copy()
+                    # XXX: for the moment nothing to do
+                    #if finished_command is not None:
+                    #    def_cmd = doc.def_commands.get(finished_command.cmd_name)
+                    #    if def_cmd: # user-defined command
+                    #        # prepare templating environment
+                    #        tpl_env = template_globals.copy() ???
                             ### TODO: finish to prepare rendering environment
 
                 else:
