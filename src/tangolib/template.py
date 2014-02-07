@@ -261,7 +261,7 @@ class Template:
             
         def render(self, env):
             if self.variable not in env:
-                raise TemplateRenderError("Variable '{}' not bound".format(self.variable), self.template, self.start_pos, self.end_pos)
+                raise TemplateRenderError("Variable '{}' not bound".format(self.variable))
             return "{}".format(env[self.variable])
 
         def __repr__(self):

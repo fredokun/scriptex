@@ -504,6 +504,8 @@ class Parser:
             ######################################################
             ### command definition
             elif tok.token_type == "def_cmd_header":
+                # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
                 unparsed_content.flush(current_element)
 
                 def_cmd_name = tok.value.group(1)
@@ -553,7 +555,7 @@ class Parser:
                 arg_num = int(tok.value.group(1))
                 command_arg_markup = macro_cmd_arguments[arg_num]
                 current_element.append(command_arg_markup)
-                elemnt_stack.append(current_element)
+                element_stack.append(current_element)
                 current_element = command_arg_markup
                 
 

@@ -60,6 +60,8 @@ class DocumentProcessor:
 
                     # First case: macro-command
                     if self.markup.cmd_name in self.document.def_commands:
+                        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+
                         new_content = self.document.def_commands[self.markup.cmd_name].process(self.document, self.markup)
                         self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                         self.source_markup.content[self.source_index] = new_content
