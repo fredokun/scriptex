@@ -14,7 +14,7 @@ import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, CommandArg, \
-    Environment, Text, Newlines, Spaces, Preformated
+    Environment, Text, Newlines, Spaces, Preformated, SubDocument
 
 import tangolib.template as template
 
@@ -90,7 +90,7 @@ REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
 REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
-REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}\[([0-9]+)\]")
+REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
@@ -509,7 +509,9 @@ class Parser:
                 unparsed_content.flush(current_element)
 
                 def_cmd_name = tok.value.group(1)
-                def_cmd_arity = int(tok.value.group(2))
+                def_cmd_arity = 0
+                if tok.value.group(2) is not None:
+                    def_cmd_arity = int(tok.value.group(2))
                                 
                 tok2 = lex.next_token()
                 if tok2.token_type != "open_curly":

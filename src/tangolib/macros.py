@@ -21,10 +21,11 @@ class DefCommand:
         
         # first: check arity
         if len(command.arguments) != self.cmd_arity:
-            raise MacroError("Wrong macro-command arity: expected {} but given {} argument{}",
-                             self.cmd_arity,
-                             len(command.arguments),
-                             "s" if len(command.arguments) > 1 else "")
+            raise MacroError("Wrong macro-command arity for '{}': expected {} but given {} argument{}"
+                             .format(self.cmd_name,                                                                                  
+                                     self.cmd_arity,
+                                     len(command.arguments),
+                                     "s" if len(command.arguments) > 1 else ""))
 
         # second: template rendering
         tpl_env = dict()
