@@ -92,7 +92,7 @@ REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
 REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
-REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}")
+REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
 # main parser class
@@ -579,6 +579,9 @@ class Parser:
                 unparsed_content.flush(current_element)
 
                 def_env_name = tok.value.group(1)
+                def_env_arity = 0
+                if tok.value.group(2) is not None:
+                    def_env_arity = int(tok.value.group(2))
 
                 tok2 = lex.next_token()
                 if tok2.token_type != "open_curly":
@@ -612,7 +615,7 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_cmd_lex_start_pos).compile()
+                                                       base_pos=def_env_header_lex_start_pos).compile()
 
                 # prepare the template string for the footer part
                 def_env_footer_lex_start_pos = lex.pos
@@ -641,10 +644,10 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_cmd_lex_start_pos).compile()
+                                                       base_pos=def_env_footer_lex_start_pos).compile()
 
                 # register the environement
-                doc.def_environments[def_env_name] = DefEnvironment(def_env_name, def_env_header_tpl, def_env_footer_tpl)
+                doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_tpl, def_env_footer_tpl)
             
 
 
