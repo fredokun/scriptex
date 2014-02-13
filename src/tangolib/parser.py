@@ -4,8 +4,9 @@ The objective of the preliminary parsing phase is to
 
 In particular it handles :
  - line comments
- - latex-style commands   \cmd[<opt>]{ <body> }
- - latex-style environments \begin{env}[<opt>] <body> \end{env}
+ - latex-style commands   \cmd[<opt>]{<arg1>}{...}{<argN>}
+ - special preformated commands \cmd[<opt>]{{{ <preformated>}}}
+ - latex-style environments \begin{env}[<opt>]{<arg1>}{...}{<argN>} <body> \end{env}
  - latex-style sectionning commands \part \chapter \section \subsection \subsubsection \paragraph
 
 """
@@ -65,8 +66,8 @@ REGEX_PROTECTED = ere.ERegex(r"\\{|\\}")
 
 REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.str_end()
 
-REGEX_ENV_HEADER = ere.ERegex(r"\\begin{([^}]+)}(?:\[([^\]]+)\])?")
-REGEX_ENV_FOOTER = ere.ERegex(r"\\end{([^}]+)}")
+REGEX_ENV_HEADER = ere.ERegex(r"\\begin{(" + REGEX_IDENT_STR + r")}(?:\[([^\]]+)\])?")
+REGEX_ENV_FOOTER = ere.ERegex(r"\\end{(" + REGEX_IDENT_STR + r")}")
 
 REGEX_INCLUDE = ere.ERegex(r"\\include{([^}]+)}")
 
@@ -209,7 +210,7 @@ class Parser:
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
 
-                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc" }:
+                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc", "envcmddoc" }:
                     if current_element.markup_type == "command":
                         raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
                     elif current_element.markup_type == "environment":
@@ -239,6 +240,42 @@ class Parser:
                 current_element.append(env)
                 element_stack.append(current_element)
                 current_element = env
+
+                # check if the environment has at least an arguemnt
+                ntok = lex.next_token() 
+                if ntok is None:
+                    pass  # special case: no more tokens (last command)
+                elif ntok.token_type == "open_curly":
+                    element_stack.append(current_element)
+                    current_element = cmd
+                    lex.putback(ntok)  # need the bracket for argument parsing
+                else:
+                    lex.putback(ntok)  # command without argument
+
+            # start of argument  (or dummy bracket somewhere)
+            elif current_element.markup_type == "environment" and tok.token_type == "open_curly":
+                # first argument
+                env_arg = EnvArg(doc,current_element, tok.start_pos)
+                current_element.add_argument(env_arg)
+                element_stack.append(current_element)
+                current_element = env_arg
+                    
+            # end of argument (or dummy bracket somewhere)
+            elif current_element.markup_type == "env_arg" and tok.token_type == "close_curly":
+                if current_element.markup_type == "env_arg":
+                unparsed_content.flush(current_element)
+                current_element.end_pos = tok.end_pos
+                # Pop parent element (environment)
+                current_element = element_stack.pop()
+
+                # check if the environment has at least an arguemnt
+                ntok = lex.next_token() 
+                if ntok is None: # no more token ? ==> ERROR !
+                    raise ParseError(tok.start_pos, tok.end_pos, "Missing closing environment at end of input")
+                elif:
+                    # keep the enviroment as current element for futher argument or the body
+                    lex.putback(ntok)  # need the bracket for argument parsing
+
             elif tok.token_type == "env_footer":
                 if current_element.markup_type != "environment":
                     raise ParseError(tok.start_pos, tok.end_pos, "Cannot close environment")
@@ -272,54 +309,32 @@ class Parser:
                     lex.putback(ntok)  # command without argument
 
             # start of argument  (or dummy bracket somewhere)
-            elif tok.token_type == "open_curly":
-                if current_element.markup_type == "command":
-                    # first argument
-                    cmd_arg = CommandArg(doc,current_element, tok.start_pos)
-                    current_element.add_argument(cmd_arg)
-                    element_stack.append(current_element)
-                    current_element = cmd_arg
-                else:
-                    # XXX: error ?
-                    # raise ParseError(tok.start_pos, tok.end_pos, "Unexpected opening curly bracket")
-                    unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+            elif current_element.markup_type == "command" and tok.token_type == "open_curly":
+                # first argument
+                cmd_arg = CommandArg(doc,current_element, tok.start_pos)
+                current_element.add_argument(cmd_arg)
+                element_stack.append(current_element)
+                current_element = cmd_arg
                     
             # end of argument (or dummy bracket somewhere)
-            elif tok.token_type == "close_curly":
-                if current_element.markup_type == "command_arg":
-                    unparsed_content.flush(current_element)
-                    current_element.end_pos = tok.end_pos
-                    # Pop parent element (command)
-                    current_element = element_stack.pop()
+            elif current_element.markup_type == "command_arg" and tok.token_type == "close_curly":
+                unparsed_content.flush(current_element)
+                current_element.end_pos = tok.end_pos
+                # Pop parent element (command)
+                current_element = element_stack.pop()
 
-                    finished_command = None
-
-                    # check if the command has at least an arguemnt
-                    ntok = lex.next_token() 
-                    if ntok is None:
-                        finished_command = current_element
-                        current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
-                    elif ntok.token_type == "open_curly":
-                        # keep the command as current element
-                        lex.putback(ntok)  # need the bracket for argument parsing
-                    else:
-                        finished_command = current_element
-                        # pop the command
-                        current_element = element_stack.pop()
-                        lex.putback(ntok)  # command without more argument
-
-                    # special processing if command is user-defined
-                    # XXX: for the moment nothing to do
-                    #if finished_command is not None:
-                    #    def_cmd = doc.def_commands.get(finished_command.cmd_name)
-                    #    if def_cmd: # user-defined command
-                    #        # prepare templating environment
-                    #        tpl_env = template_globals.copy() ???
-                            ### TODO: finish to prepare rendering environment
-
+                # check if the command has at least an arguemnt
+                ntok = lex.next_token() 
+                if ntok is None:
+                    current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
+                elif ntok.token_type == "open_curly":
+                    # keep the command as current element
+                    lex.putback(ntok)  # need the bracket for argument parsing
                 else:
-                    unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
-
+                    # pop the command
+                    current_element = element_stack.pop()
+                    lex.putback(ntok)  # command without more argument
+                    
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
                 cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)

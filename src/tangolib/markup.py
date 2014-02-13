@@ -156,6 +156,10 @@ class Environment(Markup):
         self.env_name = env_name
         self.env_opts = env_opts
         self.header_end_pos = header_end_pos
+        self.arguments = []
+
+    def add_argument(self, arg):
+        self.arguments.append(arg) # for indexed acccess to arguments
 
     def __repr__(self):
         return "Environment(env_name={},env_opts={},content={})".format(self.env_name, self.env_opts, repr(self.content))
@@ -170,6 +174,20 @@ class Environment(Markup):
         ret += (indent_string * indent_level) + "</environment>\n"
         return ret
 
+class EnvArg(Markup):
+    def __init__(self, doc, env, start_pos):
+        super().__init__(doc, "env_arg", start_pos, start_pos)
+        self.env = env
+
+    def __repr__(self):
+        return "EnvArg(env_name={}, content={})".format(self.env.env_name, repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<env_arg {} >\n'.format(self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + "</env_arg>\n"
+        return ret
 
 class Section(Markup):
     def __init__(self, doc, section_title, section_name, section_depth, header_start_pos, header_end_pos):
