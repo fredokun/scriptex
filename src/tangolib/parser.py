@@ -262,7 +262,6 @@ class Parser:
                     
             # end of argument (or dummy bracket somewhere)
             elif current_element.markup_type == "env_arg" and tok.token_type == "close_curly":
-                if current_element.markup_type == "env_arg":
                 unparsed_content.flush(current_element)
                 current_element.end_pos = tok.end_pos
                 # Pop parent element (environment)
@@ -272,7 +271,7 @@ class Parser:
                 ntok = lex.next_token() 
                 if ntok is None: # no more token ? ==> ERROR !
                     raise ParseError(tok.start_pos, tok.end_pos, "Missing closing environment at end of input")
-                elif:
+                else:
                     # keep the enviroment as current element for futher argument or the body
                     lex.putback(ntok)  # need the bracket for argument parsing
 
