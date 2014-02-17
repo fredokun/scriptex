@@ -245,19 +245,19 @@ class Parser:
                 element_stack.append(current_element)
                 current_element = env
 
-                # check if the environment has at least an arguemnt
+                # check if the environment has at least an argument
                 ntok = lex.next_token() 
                 if ntok is None:
                     pass  # special case: no more tokens (last command)
                 elif ntok.token_type == "open_curly":
-                    element_stack.append(current_element)
-                    current_element = env
+                    env.parsing_argument = True
                     lex.putback(ntok)  # need the bracket for argument parsing
                 else:
+                    env.parsing_argument = False
                     lex.putback(ntok)  # command without argument
 
             # start of argument  (or dummy bracket somewhere)
-            elif current_element.markup_type == "environment" and tok.token_type == "open_curly":
+            elif current_element.markup_type == "environment" and current_element.parsing_argument and tok.token_type == "open_curly":
                 # first argument
                 env_arg = EnvArg(doc,current_element, tok.start_pos)
                 current_element.add_argument(env_arg)
@@ -271,12 +271,16 @@ class Parser:
                 # Pop parent element (environment)
                 current_element = element_stack.pop()
 
-                # check if the environment has at least an arguemnt
+                # check if the environment has at least a further argument
                 ntok = lex.next_token() 
                 if ntok is None: # no more token ? ==> ERROR !
                     raise ParseError(tok.start_pos, tok.end_pos, "Missing closing environment at end of input")
+                elif ntok.token_type == "open_curly":
+                    current_element.parsing_argument = True
+                    lex.putback(ntok)
                 else:
-                    # keep the enviroment as current element for futher argument or the body
+                    current_element.parsing_argument = False
+                    # keep the environment as current element for further argument or the body
                     lex.putback(ntok)  # need the bracket for argument parsing
 
             elif tok.token_type == "env_footer":
