@@ -3,6 +3,7 @@
 """
 
 from tangolib.markup import MacroCommandDocument, MacroEnvHeaderDocument, MacroEnvFooterDocument
+                            
 
 class MacroError(Exception):
     pass
@@ -19,7 +20,7 @@ class DefCommand:
     def process(self, document, command):
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         
-        # first: check arity
+        # check arity
         if len(command.arguments) != self.cmd_arity:
             raise MacroError("Wrong macro-command arity for '{}': expected {} but given {} argument{}"
                              .format(self.cmd_name,                                                                                  
@@ -27,14 +28,16 @@ class DefCommand:
                                      len(command.arguments),
                                      "s" if len(command.arguments) > 1 else ""))
 
-        # second: template rendering
+        # argument expansion
         tpl_env = dict()
         for arg_num in range(1,self.cmd_arity+1):
-            tpl_env['_'+str(arg_num)] = r"\macroCommandArgument[0]"
+            tpl_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
+            
 
+        # template rendering for the body
         result_to_parse = self.cmd_template.render(tpl_env)
         
-        # third: recursive parsing of template result
+        # recursive parsing of template result
         from tangolib.parser import Parser
         parser = Parser()
 
@@ -44,7 +47,6 @@ class DefCommand:
         result_parsed = parser.parse(doc, macro_cmd_arguments=command.arguments)
 
         return result_parsed
-
 
 class DefEnvironment:
     def __init__(self, env_doc, env_name, env_arity, env_start_pos, env_end_pos, env_header_tpl, env_footer_tpl):
@@ -69,11 +71,11 @@ class DefEnvironment:
                                      "s" if len(env.arguments) > 1 else ""))
 
         # second: template rendering
-        self.template_env = dict()
+        env.template_env = dict()
         for arg_num in range(1,self.env_arity+1):
-            self.template_env['_'+str(arg_num)] = r"\macroCommandArgument[0]"
+            env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[0]"
 
-        result_to_parse = self.env_header_tpl.render(self.template_env)
+        result_to_parse = self.env_header_tpl.render(env.template_env)
         
         # third: recursive parsing of template result
         from tangolib.parser import Parser
@@ -89,8 +91,8 @@ class DefEnvironment:
 
     def process_footer(self, document, env):
         
-        result_to_parse = self.env_footer_tpl.render(self.template_env)
-
+        result_to_parse = self.env_footer_tpl.render(env.template_env)
+        del env.template_env
         
         from tangolib.parser import Parser
         parser = Parser()

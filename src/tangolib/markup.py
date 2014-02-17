@@ -144,6 +144,7 @@ class CommandArg(Markup):
         ret += (indent_string * indent_level) + "</command_arg>\n"
         return ret
 
+
 class Environment(Markup):
     def __init__(self, doc, env_name, env_opts, header_start_pos, header_end_pos):
         super().__init__(doc, "environment", header_start_pos, None)
