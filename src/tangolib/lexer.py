@@ -363,7 +363,7 @@ class StringTokenizer(TokenizerBackend):
         return line
 
     def next_char(self):
-        assert self.offset < self.input_length, "cannot move foward at end of input"
+        assert self.offset < self.input_length, "cannot move forward at end of input"
         ch = self.peek_char()
         if ch == '\n':
             self.eol_map[self.offset] = self.cpos

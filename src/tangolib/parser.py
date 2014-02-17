@@ -15,7 +15,7 @@ import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, CommandArg, \
-    Environment, Text, Newlines, Spaces, Preformated, SubDocument
+    Environment, Text, Newlines, Spaces, Preformated, SubDocument, EnvArg
 
 import tangolib.template as template
 
@@ -92,7 +92,9 @@ REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
 REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_DEF_CMD_HEADER_SHORT = ere.ERegex(r"\\defCmd{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_DEF_ENV_HEADER_SHORT = ere.ERegex(r"\\defEnv{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
 # main parser class
@@ -108,7 +110,9 @@ class Parser:
         self.recognizers.append(lexer.Regexp("line_comment", REGEX_LINE_COMMENT))
 
         self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER))
+        self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER_SHORT))
         self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER))
+        self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER_SHORT))
 
         self.recognizers.append(lexer.Regexp("macro_cmd_arg", REGEX_MACRO_CMD_ARG))
 
@@ -247,7 +251,7 @@ class Parser:
                     pass  # special case: no more tokens (last command)
                 elif ntok.token_type == "open_curly":
                     element_stack.append(current_element)
-                    current_element = cmd
+                    current_element = env
                     lex.putback(ntok)  # need the bracket for argument parsing
                 else:
                     lex.putback(ntok)  # command without argument
@@ -419,8 +423,6 @@ class Parser:
             ### Markdown-style itemize and enumerate ###
             ############################################$
             elif tok.token_type == "mdlist_open" or tok.token_type == "mdlist_item":
-                # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
                 mditem_indent = len(tok.value.group(1))
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
 
@@ -517,8 +519,6 @@ class Parser:
             ######################################################
             ### command definition
             elif tok.token_type == "def_cmd_header":
-                # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
                 unparsed_content.flush(current_element)
 
                 def_cmd_name = tok.value.group(1)
@@ -565,7 +565,7 @@ class Parser:
                 doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)
 
             ### macro-command argument
-            elif tok.token_type == "macro_cmd_arg":
+            elif tok.token_type == "macro_cmd_arg": ### XXX: dead code ?
                 unparsed_content.flush(current_element)
                 arg_num = int(tok.value.group(1))
                 command_arg_markup = macro_cmd_arguments[arg_num]
@@ -576,6 +576,7 @@ class Parser:
 
             ### environment definition
             elif tok.token_type == "def_env_header":
+
                 unparsed_content.flush(current_element)
 
                 def_env_name = tok.value.group(1)
@@ -594,10 +595,14 @@ class Parser:
 
                 nb_curly = 1
                 while nb_curly > 0:
-                    ch = lex.next_char()
-                    if ch is None:
+                    ch = None
+                    try:
+                        ch = lex.next_char()
+                        if ch is None:
+                            raise ParseError(def_env_header_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment header body")
+                    except:
                         raise ParseError(def_env_header_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment header body")
-                    elif ch == '}':
+                    if ch == '}':
                         nb_curly -= 1
                         if nb_curly > 0:
                             def_env_header_lex_str += ch
@@ -615,18 +620,29 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_env_header_lex_start_pos).compile()
+                                                       base_pos=def_env_header_lex_start_pos)
+                def_env_header_tpl.compile()
 
                 # prepare the template string for the footer part
+
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defEnvironment footer body")
+
                 def_env_footer_lex_start_pos = lex.pos
                 def_env_footer_lex_str = ""
 
                 nb_curly = 1
                 while nb_curly > 0:
-                    ch = lex.next_char()
-                    if ch is None:
+                    ch = None
+                    try:
+                        ch = lex.next_char()
+                        if ch is None:
+                            raise ParseError(def_env_footer_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment footer body")
+                    except:
                         raise ParseError(def_env_footer_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment footer body")
-                    elif ch == '}':
+                    
+                    if ch == '}':
                         nb_curly -= 1
                         if nb_curly > 0:
                             def_env_footer_lex_str += ch
@@ -644,10 +660,11 @@ class Parser:
                                                        escape_block_close='}',
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
-                                                       base_pos=def_env_footer_lex_start_pos).compile()
+                                                       base_pos=def_env_footer_lex_start_pos)
+                def_env_footer_tpl.compile()
 
                 # register the environement
-                doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_tpl, def_env_footer_tpl)
+                doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl)
             
 
 

@@ -45,12 +45,6 @@ class Document(Markup):
         self.def_commands_ = dict() # dictionary for defined commands
         self.def_environments_ = dict() # dictionary for defined environments
 
-    def register_def_command(self, cmd_name, cmd_arity, cmd_template):
-        self.def_commands_[cmd_name] = DefCommand(cmd_name, cmd_arity, cmd_template)
-
-    def register_def_environment(self, env_name, env_header_template, env_footer_template):
-        self.def_environments_[env_name] = DefEnvironment(env_name, env_header_template, env_footer_template)
-
     @property
     def def_commands(self):
         return self.def_commands_
@@ -187,6 +181,44 @@ class EnvArg(Markup):
         ret += '<env_arg {} >\n'.format(self.positions_toxml())
         ret += self.content_toxml(indent_level + 1, indent_string)
         ret += (indent_string * indent_level) + "</env_arg>\n"
+        return ret
+
+class MacroEnvHeaderDocument(Document):
+    def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
+        super().__init__(filename, sublex)
+        self.doc = parent_doc
+        self.markup_type = "macroenvheaderdoc"
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.sublex = sublex
+
+    def __repr__(self):
+        return "MacroEnvHeaderDocument(content={})".format(repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<subdoc filename="{}" {}>\n'.format(self.filename, self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + '</subdoc>\n'
+        return ret
+
+class MacroEnvFooterDocument(Document):
+    def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
+        super().__init__(filename, sublex)
+        self.doc = parent_doc
+        self.markup_type = "macroenvfooterdoc"
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.sublex = sublex
+
+    def __repr__(self):
+        return "MacroEnvFooterDocument(content={})".format(repr(self.content))
+
+    def toxml(self, indent_level=0, indent_string="  "):
+        ret = indent_string * indent_level
+        ret += '<subdoc filename="{}" {}>\n'.format(self.filename, self.positions_toxml())
+        ret += self.content_toxml(indent_level + 1, indent_string)
+        ret += (indent_string * indent_level) + '</subdoc>\n'
         return ret
 
 class Section(Markup):

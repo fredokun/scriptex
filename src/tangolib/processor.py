@@ -60,8 +60,6 @@ class DocumentProcessor:
 
                     # First case: macro-command
                     if self.markup.cmd_name in self.document.def_commands:
-                        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
                         new_content = self.document.def_commands[self.markup.cmd_name].process(self.document, self.markup)
                         self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                         self.source_markup.content[self.source_index] = new_content
@@ -82,9 +80,12 @@ class DocumentProcessor:
                 ### ENVIRONMENTS: entering processor
                 elif self.markup.markup_type == "environment":
                     # First case : macro-environment
-                    # ... TODO ...
+                    if self.markup.env_name in self.document.def_environments:
+                        new_content = self.document.def_environments[self.markup.env_name].process_header(self.document, self.markup)
+                        self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
+                        self.source_markup.content[self.source_index] = new_content                     
                     # Second case: normal environment
-                    if self.markup.env_name in self.env_processors:
+                    elif self.markup.env_name in self.env_processors:
                         self.env_processors[self.markup.env_name].enter_environment(self, self.markup)
                     self.environment_stack.append(self.markup)
                 elif self.markup.markup_type == "section":
@@ -110,6 +111,11 @@ class DocumentProcessor:
                                     self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                                 self.source_markup.content[self.source_index] = new_content
                     ### ENVIRONMENTS: leaving processing
+                    # First case : macro-environment
+                    if self.markup.env_name in self.document.def_environments:
+                        new_content = self.document.def_environments[self.markup.env_name].process_footer(self.document, self.markup)
+                        self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
+                        self.source_markup.content[self.source_index] = new_content                     
                     elif self.markup.markup_type == "environment":
                         check_env = self.environment_stack.pop()
                         assert check_env == self.markup,  "invalid environment stack (please report)"
