@@ -15,6 +15,7 @@ class CmdLineArguments:
         self.code_active = False
         self.banner = False
         self.help = False
+        self.extra_options = dict()
 
     def __str__(self):
         return \
@@ -25,13 +26,15 @@ Modes = {}
 Code Active = {}
 Input file name = {}
 Output directory = {}
+Extra options = {}
 """.format(self.banner,
            self.help,
            self.output_type,
            self.modes,
            self.code_active,
            self.input_filename,
-           self.output_directory)
+           self.output_directory,
+           self.extra_options)
 
 class CmdLineError(Exception):
     pass
@@ -105,7 +108,14 @@ class CmdLineParser:
             return cmd_args[1:]
 
         else:
-            raise CmdLineError("Unknown command line option: {}".format(next_opt))
+            cmd_args = cmd_args[1:]
+            if cmd_args and not cmd_args[0].startswith("-"):
+                self.cmd_args.extra_options[next_opt] = cmd_args[0]
+                return cmd_args[1:]
+
+            self.cmd_args.extra_options[next_opt] = True
+            return cmd_args
+
                 
 
 
