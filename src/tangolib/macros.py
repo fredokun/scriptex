@@ -2,7 +2,7 @@
   Macro-processing
 """
 
-from tangolib.markup import MacroCommandDocument, MacroEnvHeaderDocument, MacroEnvFooterDocument
+from tangolib.markup import MacroCommandDocument, MacroEnvDocument, MacroEnvFooterDocument
                             
 
 class MacroError(Exception):
@@ -57,8 +57,6 @@ class DefEnvironment:
         self.env_end_pos = env_end_pos
         self.env_header_tpl = env_header_tpl
         self.env_footer_tpl = env_footer_tpl
-        self.template_env = None
-        self.env_arguments = None
 
     def process_header(self, document, env):
         
@@ -73,7 +71,7 @@ class DefEnvironment:
         # second: template rendering
         env.template_env = dict()
         for arg_num in range(1,self.env_arity+1):
-            env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[0]"
+            env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
 
         result_to_parse = self.env_header_tpl.render(env.template_env)
         
@@ -82,15 +80,14 @@ class DefEnvironment:
         parser = Parser()
 
         lex = parser.prepare_string_lexer(result_to_parse)
-        doc = MacroEnvHeaderDocument(document, "<<<MacroEnvHeader:{}>>>".format(self.env_name), self.env_start_pos, self.env_end_pos, lex)
+        doc = MacroEnvDocument(document, "<<<MacroEnv:{}>>>".format(self.env_name), self.env_start_pos, self.env_end_pos, lex)
         
         result_parsed = parser.parse(doc, macro_cmd_arguments=env.arguments)
 
-        self.env_arguments = env.arguments
         return result_parsed
 
     def process_footer(self, document, env):
-        
+
         result_to_parse = self.env_footer_tpl.render(env.template_env)
         del env.template_env
         
@@ -100,6 +97,6 @@ class DefEnvironment:
         lex = parser.prepare_string_lexer(result_to_parse)
         doc = MacroEnvFooterDocument(document, "<<<MacroEnvFooter:{}>>>".format(self.env_name), self.env_start_pos, self.env_end_pos, lex)
         
-        result_parsed = parser.parse(doc, macro_cmd_arguments=self.env_arguments)
+        result_parsed = parser.parse(doc, macro_cmd_arguments=env.arguments)
 
         return result_parsed

@@ -214,7 +214,7 @@ class Parser:
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
 
-                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc", "macroenvheaderdoc", "macroenvfooterdoc" }:
+                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc", "macroenvdoc", "macroenvfooterdoc" }:
                     if current_element.markup_type == "command":
                         raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
                     elif current_element.markup_type == "environment":

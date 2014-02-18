@@ -184,17 +184,17 @@ class EnvArg(Markup):
         ret += (indent_string * indent_level) + "</env_arg>\n"
         return ret
 
-class MacroEnvHeaderDocument(Document):
+class MacroEnvDocument(Document):
     def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
         super().__init__(filename, sublex)
         self.doc = parent_doc
-        self.markup_type = "macroenvheaderdoc"
+        self.markup_type = "macroenvdoc"
         self.start_pos = start_pos
         self.end_pos = end_pos
         self.sublex = sublex
 
     def __repr__(self):
-        return "MacroEnvHeaderDocument(content={})".format(repr(self.content))
+        return "MacroEnvDocument(content={})".format(repr(self.content))
 
     def toxml(self, indent_level=0, indent_string="  "):
         ret = indent_string * indent_level

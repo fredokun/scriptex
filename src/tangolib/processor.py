@@ -112,15 +112,18 @@ class DocumentProcessor:
                                 self.source_markup.content[self.source_index] = new_content
                     ### ENVIRONMENTS: leaving processing
                     elif self.markup.markup_type == "environment":
+                        check_env = self.environment_stack.pop()
+                        assert check_env == self.markup,  "invalid environment stack (please report)"
                         # First case : macro-environment
                         if self.markup.env_name in self.document.def_environments:
+                            
                             new_content = self.document.def_environments[self.markup.env_name].process_footer(self.document, self.markup)
-                            self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
-                            self.source_markup.content[self.source_index] = new_content
+                            # import pdb; pdb.set_trace()
+
+                            env_doc_markup = self.markup_stack.pop()
+                            env_doc_markup[0].content.extend(new_content.content)
                         # Second case: normal environment
                         else:                     
-                            check_env = self.environment_stack.pop()
-                            assert check_env == self.markup,  "invalid environment stack (please report)"
                             if self.markup.env_name in self.env_processors:
                                 new_content, recursive = self.env_processors[self.markup.env_name].process_environment(self, self.markup)
                                 if new_content is not None:
