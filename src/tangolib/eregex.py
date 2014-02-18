@@ -70,8 +70,12 @@ class ERegex:
 
         def group(self, *args):
             return self.match.group(*args)
+        
+        @property
+        def nb_groups(self):
+            return len(self.match.groups())
 
-        def start(self, groud_id):
+        def start(self, group_id):
             return self.match.start(group_id)
 
         def end(self, group_id):

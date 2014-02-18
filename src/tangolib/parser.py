@@ -4,8 +4,9 @@ The objective of the preliminary parsing phase is to
 
 In particular it handles :
  - line comments
- - latex-style commands   \cmd[<opt>]{ <body> }
- - latex-style environments \begin{env}[<opt>] <body> \end{env}
+ - latex-style commands   \cmd[<opt>]{<arg1>}{...}{<argN>}
+ - special preformated commands \cmd[<opt>]{{{ <preformated>}}}
+ - latex-style environments \begin{env}[<opt>]{<arg1>}{...}{<argN>} <body> \end{env}
  - latex-style sectionning commands \part \chapter \section \subsection \subsubsection \paragraph
 
 """
@@ -14,7 +15,11 @@ import tangolib.eregex as ere
 
 import tangolib.lexer as lexer
 from tangolib.markup import Document, Section, Command, CommandArg, \
-    Environment, Text, Newlines, Spaces, Preformated
+    Environment, Text, Newlines, Spaces, Preformated, SubDocument, EnvArg
+
+import tangolib.template as template
+
+from tangolib.macros import DefCommand, DefEnvironment
 
 class ParseError(Exception):
     pass
@@ -61,8 +66,8 @@ REGEX_PROTECTED = ere.ERegex(r"\\{|\\}")
 
 REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.str_end()
 
-REGEX_ENV_HEADER = ere.ERegex(r"\\begin{([^}]+)}(?:\[([^\]]+)\])?")
-REGEX_ENV_FOOTER = ere.ERegex(r"\\end{([^}]+)}")
+REGEX_ENV_HEADER = ere.ERegex(r"\\begin{(" + REGEX_IDENT_STR + r")}(?:\[([^\]]+)\])?")
+REGEX_ENV_FOOTER = ere.ERegex(r"\\end{(" + REGEX_IDENT_STR + r")}")
 
 REGEX_INCLUDE = ere.ERegex(r"\\include{([^}]+)}")
 
@@ -86,6 +91,12 @@ REGEX_STRONG_STAR = ere.ERegex(r"(\*)\*(?=[^*]+\*\*)")
 REGEX_EMPH_UNDER = ere.ERegex(r"(_)(?=[^_]+_)")
 REGEX_STRONG_UNDER = ere.ERegex(r"(_)_(?=[^_]+__)")
 
+REGEX_DEF_CMD_HEADER = ere.ERegex(r"\\defCommand{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_DEF_CMD_HEADER_SHORT = ere.ERegex(r"\\defCmd{\\(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_DEF_ENV_HEADER_SHORT = ere.ERegex(r"\\defEnv{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
+REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
+
 # main parser class
 
 class Parser:
@@ -97,6 +108,14 @@ class Parser:
         self.recognizers.append(lexer.Regexp("protected", REGEX_PROTECTED))
         self.recognizers.append(lexer.EndOfInput("end_of_input"))
         self.recognizers.append(lexer.Regexp("line_comment", REGEX_LINE_COMMENT))
+
+        self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER))
+        self.recognizers.append(lexer.Regexp("def_env_header", REGEX_DEF_ENV_HEADER_SHORT))
+        self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER))
+        self.recognizers.append(lexer.Regexp("def_cmd_header", REGEX_DEF_CMD_HEADER_SHORT))
+
+        self.recognizers.append(lexer.Regexp("macro_cmd_arg", REGEX_MACRO_CMD_ARG))
+
         self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
         self.recognizers.append(lexer.Regexp("include", REGEX_INCLUDE))
@@ -148,19 +167,20 @@ class Parser:
         def __repr__(self):
             return "UnparsedContent({},start_pos={},end_pos={})".format(repr(self.content), self.start_pos, self.end_pos)
         
-    def parse(self, lex):
+    def parse(self, doc, macro_cmd_arguments=None):
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
-        doc = Document(self.filename, lex)
-        
         element_stack = []
 
         current_element = doc
         continue_parse = True
         unparsed_content = Parser.UnparsedContent()
 
+        lex = doc.lex
+
         while continue_parse:
+
             tok = lex.next_token()
             if tok is None:
                 next_char = lex.peek_char()
@@ -194,7 +214,7 @@ class Parser:
             elif tok.token_type == "end_of_input":
                 unparsed_content.flush(current_element)
 
-                while current_element.markup_type not in { "document", "subdoc" }:
+                while current_element.markup_type not in { "document", "subdoc", "macrocmddoc", "macroenvdoc", "macroenvfooterdoc" }:
                     if current_element.markup_type == "command":
                         raise ParseError(current_element.start_pos, tok.start_pos, "Unfinished command before end of document")
                     elif current_element.markup_type == "environment":
@@ -224,6 +244,45 @@ class Parser:
                 current_element.append(env)
                 element_stack.append(current_element)
                 current_element = env
+
+                # check if the environment has at least an argument
+                ntok = lex.next_token() 
+                if ntok is None:
+                    pass  # special case: no more tokens (last command)
+                elif ntok.token_type == "open_curly":
+                    env.parsing_argument = True
+                    lex.putback(ntok)  # need the bracket for argument parsing
+                else:
+                    env.parsing_argument = False
+                    lex.putback(ntok)  # command without argument
+
+            # start of argument  (or dummy bracket somewhere)
+            elif current_element.markup_type == "environment" and current_element.parsing_argument and tok.token_type == "open_curly":
+                # first argument
+                env_arg = EnvArg(doc,current_element, tok.start_pos)
+                current_element.add_argument(env_arg)
+                element_stack.append(current_element)
+                current_element = env_arg
+                    
+            # end of argument (or dummy bracket somewhere)
+            elif current_element.markup_type == "env_arg" and tok.token_type == "close_curly":
+                unparsed_content.flush(current_element)
+                current_element.end_pos = tok.end_pos
+                # Pop parent element (environment)
+                current_element = element_stack.pop()
+
+                # check if the environment has at least a further argument
+                ntok = lex.next_token() 
+                if ntok is None: # no more token ? ==> ERROR !
+                    raise ParseError(tok.start_pos, tok.end_pos, "Missing closing environment at end of input")
+                elif ntok.token_type == "open_curly":
+                    current_element.parsing_argument = True
+                    lex.putback(ntok)
+                else:
+                    current_element.parsing_argument = False
+                    # keep the environment as current element for further argument or the body
+                    lex.putback(ntok)  # need the bracket for argument parsing
+
             elif tok.token_type == "env_footer":
                 if current_element.markup_type != "environment":
                     raise ParseError(tok.start_pos, tok.end_pos, "Cannot close environment")
@@ -257,42 +316,32 @@ class Parser:
                     lex.putback(ntok)  # command without argument
 
             # start of argument  (or dummy bracket somewhere)
-            elif tok.token_type == "open_curly":
-                if current_element.markup_type == "command":
-                    # first argument
-                    cmd_arg = CommandArg(doc,current_element, tok.start_pos)
-                    current_element.add_argument(cmd_arg)
-                    element_stack.append(current_element)
-                    current_element = cmd_arg
-                else:
-                    # XXX: error ?
-                    # raise ParseError(tok.start_pos, tok.end_pos, "Unexpected opening curly bracket")
-                    unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
+            elif current_element.markup_type == "command" and tok.token_type == "open_curly":
+                # first argument
+                cmd_arg = CommandArg(doc,current_element, tok.start_pos)
+                current_element.add_argument(cmd_arg)
+                element_stack.append(current_element)
+                current_element = cmd_arg
                     
             # end of argument (or dummy bracket somewhere)
-            elif tok.token_type == "close_curly":
-                if current_element.markup_type == "command_arg":
-                    unparsed_content.flush(current_element)
-                    current_element.end_pos = tok.end_pos
-                    # Pop parent element (command)
-                    current_element = element_stack.pop()
+            elif current_element.markup_type == "command_arg" and tok.token_type == "close_curly":
+                unparsed_content.flush(current_element)
+                current_element.end_pos = tok.end_pos
+                # Pop parent element (command)
+                current_element = element_stack.pop()
 
-                    # check if the command has at least an arguemnt
-                    ntok = lex.next_token() 
-                    if ntok is None:
-                        current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
-                    elif ntok.token_type == "open_curly":
-                        # keep the command as current element
-                        lex.putback(ntok)  # need the bracket for argument parsing
-                    else:
-                        # pop the command
-                        current_element = element_stack.pop()
-                        lex.putback(ntok)  # command without argument
-
-
+                # check if the command has at least an arguemnt
+                ntok = lex.next_token() 
+                if ntok is None:
+                    current_element = element_stack.pop()  # special case: no more tokens (last command, pop it)
+                elif ntok.token_type == "open_curly":
+                    # keep the command as current element
+                    lex.putback(ntok)  # need the bracket for argument parsing
                 else:
-                    unparsed_content.append_str("}", tok.start_pos, tok.end_pos)
-
+                    # pop the command
+                    current_element = element_stack.pop()
+                    lex.putback(ntok)  # command without more argument
+                    
             elif tok.token_type == "cmd_pre_header":
                 unparsed_content.flush(current_element)
                 cmd = Command(doc, tok.value.group(1), tok.value.group(2), tok.start_pos, tok.end_pos, preformated=True)
@@ -378,8 +427,6 @@ class Parser:
             ### Markdown-style itemize and enumerate ###
             ############################################$
             elif tok.token_type == "mdlist_open" or tok.token_type == "mdlist_item":
-                # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-
                 mditem_indent = len(tok.value.group(1))
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
 
@@ -471,6 +518,160 @@ class Parser:
                 element_stack.append(current_element)
                 current_element = cmd
 
+            ######################################################
+            ### Macros: commands and environments definitions  ###
+            ######################################################
+            ### command definition
+            elif tok.token_type == "def_cmd_header":
+                unparsed_content.flush(current_element)
+
+                def_cmd_name = tok.value.group(1)
+                def_cmd_arity = 0
+                if tok.value.group(2) is not None:
+                    def_cmd_arity = int(tok.value.group(2))
+                                
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defCommand body")
+
+                # prepare the template string
+                def_cmd_lex_start_pos = lex.pos
+                def_cmd_lex_str = ""
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = lex.next_char()
+                    if ch is None:
+                        raise ParseError(def_cmd_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defCommand body")
+                    elif ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_cmd_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_cmd_lex_str += ch
+
+
+                def_cmd_tpl = template.Template(def_cmd_lex_str,
+                                                safe_mode = False,
+                                                escape_var='#',
+                                                escape_inline='@',
+                                                escape_block='@',
+                                                escape_block_open='{',
+                                                escape_block_close='}',
+                                                escape_emit_function='emit',
+                                                filename='<defCommand:{}>'.format(def_cmd_name),
+                                                base_pos=def_cmd_lex_start_pos)
+
+                def_cmd_tpl.compile()
+
+                # register the command
+                doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)
+
+            ### macro-command argument
+            elif tok.token_type == "macro_cmd_arg": ### XXX: dead code ?
+                unparsed_content.flush(current_element)
+                arg_num = int(tok.value.group(1))
+                command_arg_markup = macro_cmd_arguments[arg_num]
+                current_element.append(command_arg_markup)
+                element_stack.append(current_element)
+                current_element = command_arg_markup
+                
+
+            ### environment definition
+            elif tok.token_type == "def_env_header":
+
+                unparsed_content.flush(current_element)
+
+                def_env_name = tok.value.group(1)
+                def_env_arity = 0
+                if tok.value.group(2) is not None:
+                    def_env_arity = int(tok.value.group(2))
+
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defEnvironment header body")
+
+
+                # prepare the template string for the header part
+                def_env_header_lex_start_pos = lex.pos
+                def_env_header_lex_str = ""
+
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = None
+                    try:
+                        ch = lex.next_char()
+                        if ch is None:
+                            raise ParseError(def_env_header_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment header body")
+                    except:
+                        raise ParseError(def_env_header_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment header body")
+                    if ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_env_header_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_env_header_lex_str += ch
+                    
+                def_env_header_tpl = template.Template(def_env_header_lex_str,
+                                                       safe_mode=False,
+                                                       escape_var='#',
+                                                       escape_inline='@',
+                                                       escape_block='@',
+                                                       escape_block_open='{',
+                                                       escape_block_close='}',
+                                                       escape_emit_function='emit',
+                                                       filename='<defEnvironment:{}>'.format(def_env_name),
+                                                       base_pos=def_env_header_lex_start_pos)
+                def_env_header_tpl.compile()
+
+                # prepare the template string for the footer part
+
+                tok2 = lex.next_token()
+                if tok2.token_type != "open_curly":
+                    raise ParseError(tok.end_pos, tok.end_pos.next_char(), "Missing '{' for \\defEnvironment footer body")
+
+                def_env_footer_lex_start_pos = lex.pos
+                def_env_footer_lex_str = ""
+
+                nb_curly = 1
+                while nb_curly > 0:
+                    ch = None
+                    try:
+                        ch = lex.next_char()
+                        if ch is None:
+                            raise ParseError(def_env_footer_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment footer body")
+                    except:
+                        raise ParseError(def_env_footer_lex_start_pos, lex.pos, "Unexpected end of input while parsing \\defEnvironment footer body")
+                    
+                    if ch == '}':
+                        nb_curly -= 1
+                        if nb_curly > 0:
+                            def_env_footer_lex_str += ch
+                    else:
+                        if ch == '{':
+                            nb_curly += 1
+                        def_env_footer_lex_str += ch
+                    
+                def_env_footer_tpl = template.Template(def_env_footer_lex_str,
+                                                       safe_mode=False,
+                                                       escape_var='#',
+                                                       escape_inline='@',
+                                                       escape_block='@',
+                                                       escape_block_open='{',
+                                                       escape_block_close='}',
+                                                       escape_emit_function='emit',
+                                                       filename='<defEnvironment:{}>'.format(def_env_name),
+                                                       base_pos=def_env_footer_lex_start_pos)
+                def_env_footer_tpl.compile()
+
+                # register the environement
+                doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl)
+            
+
+
             ###########################################
             ### Special characters (newlines, etc.) ###
             ###########################################
@@ -537,13 +738,17 @@ class Parser:
         # preparsing finished
         return doc
 
-            
-    def parse_from_string(self, input, filename="<string>"):
-        self.filename = filename
+
+    def prepare_string_lexer(self, input):
         tokens = lexer.Tokenizer(lexer.StringTokenizer(input))
         lex = lexer.Lexer(tokens, *self.recognizers)
-
-        return self.parse(lex)
+        return lex
+        
+    def parse_from_string(self, input, filename="<string>"):
+        self.filename = filename
+        lex = self.prepare_string_lexer(input)
+        doc = Document(self.filename, lex)            
+        return self.parse(doc)
 
     def parse_from_file(self, filename):
         f = open(filename, "r")
@@ -551,3 +756,4 @@ class Parser:
         f.close()
         doc = self.parse_from_string(input, filename)
         return doc
+

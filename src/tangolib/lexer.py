@@ -9,13 +9,19 @@ class ParsePosition:
     A parse position is a line position, a character position
     and an absolute offset into a character buffer.
     '''
-    def __init__(self, lpos, cpos, offset):
+    def __init__(self, lpos=1, cpos=1, offset=0):
         self.lpos = lpos
         self.cpos = cpos
         self.offset = offset
 
     def next_char(self, delta=1):
         return ParsePosition(self.lpos, self.cpos + delta, self.offset + delta)
+
+    def prev_char(self):
+        return ParsePosition(self.lpos, self.cpos - 1, self.offset - 1)
+
+    def next_line(self):
+        return ParsePosition(self.lpos + 1, 1, self.offset + 1)
 
     def __repr__(self):
         return "ParsePosition(lpos={0}, cpos={1}, offset={2})"\
@@ -357,7 +363,7 @@ class StringTokenizer(TokenizerBackend):
         return line
 
     def next_char(self):
-        assert self.offset < self.input_length, "cannot move foward at end of input"
+        assert self.offset < self.input_length, "cannot move forward at end of input"
         ch = self.peek_char()
         if ch == '\n':
             self.eol_map[self.offset] = self.cpos
