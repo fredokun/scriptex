@@ -1,30 +1,15 @@
 
 # the Tango frontend
 
-import argparse
 import sys
+
+from tangolib.cmdparse import CmdLineParser
 
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
 from tangolib.processors import core, codeactive
 from tangolib.generators.latex.latexconfig import LatexConfiguration
 from tangolib.generators.latex.latexgen import LatexDocumentGenerator
-
-def tangoArgumentParser():
-    parser = argparse.ArgumentParser(prog="tango", description="a programmable document processor")
-
-    parser.add_argument("input_file", type=str, help="input file", action="store")
-
-    parser.add_argument("--banner", help="show nice banner", action="store_true")
-
-    parser.add_argument("--latex", help="output latex", action="store_true")
-
-    parser.add_argument("--codeactive", help="support for active python code", action="store_true")
-
-    parser.add_argument("--output-dir", type=str, default="tango_output", help="set output directory", action="store")
-
-    return parser
-    
 
 def tangoBanner():
     return \
@@ -90,8 +75,9 @@ if __name__ == "__main__":
                  /____/        
 ---""", echo=False)
 
-    arg_parser = tangoArgumentParser()
-    args = arg_parser.parse_args()
+    arg_parser = CmdLineParser(sys.argv)
+
+    args = arg_parser.parse()
 
     if args.banner:
         print(tangoBanner())
@@ -110,7 +96,7 @@ if __name__ == "__main__":
 
     latex_config = None
     enable_write_phase = False
-    if args.latex:
+    if args.output_type == "latex":
         enable_write_phase = True
         latex_config = LatexConfiguration()
 
@@ -127,9 +113,9 @@ if __name__ == "__main__":
 
     parser = Parser()
 
-    tangoPrintln("Parsing from file '{}'".format(args.input_file))
+    tangoPrintln("Parsing from file '{}'".format(args.input_filename))
 
-    doc = parser.parse_from_file(args.input_file)
+    doc = parser.parse_from_file(args.input_filename)
 
     # 2) processing
 
@@ -139,7 +125,7 @@ if __name__ == "__main__":
         core.register_core_processors(processor)
 
         # support for active python code
-        if args.codeactive:
+        if args.code_active:
             tangoPrintln("Enabling active python code processors")
 
             py_ctx = codeactive.PythonContext()
@@ -157,7 +143,7 @@ if __name__ == "__main__":
     
     if enable_generate_phase:
 
-        if args.latex:
+        if args.output_type == "latex":
             # latex mode
             tangoPrintln("Generating latex")
             
@@ -174,10 +160,10 @@ if __name__ == "__main__":
 
     if enable_write_phase:
 
-        if args.latex:
+        if args.output_type == "latex":
             output_mode_dir = "tex"
            
-        output_directory = args.output_dir + "/" + output_mode_dir
+        output_directory = args.output_directory + "/" + output_mode_dir
  
         try:
             os.makedirs(output_directory)
@@ -188,11 +174,14 @@ if __name__ == "__main__":
 
         tangoPrintln("output directory '{}'".format(output_directory))
 
-        infile_without_ext = args.input_file.split(".")
+        infile_without_ext = os.path.basename(args.input_filename)
+        infile_without_ext = infile_without_ext.split(".")
         if infile_without_ext[-1] == "tex":
             infile_without_ext = ".".join(infile_without_ext[:-1])
         else:
-            infile_without_ext = args.input_file
+            infile_without_ext = args.input_filename
+
+        
 
         main_output_filename = output_directory + "/" + infile_without_ext + "-gen." + output_mode_dir
 
