@@ -192,7 +192,7 @@ class Template:
         compiled_inline = inline_code  # TODO:  compile !
 
         parsed_inline = ast.parse(inline_code, self.filename, 'eval')
-        ast.increment_lineno(parsed_inline, start_pos.line_pos)
+        ast.increment_lineno(parsed_inline, start_pos.lpos)
 
         compiled_inline = compile(parsed_inline, self.filename, 'eval')
 
@@ -227,7 +227,7 @@ class Template:
         compiled_block = block_code  # TODO:  compile !
 
         parsed_block = ast.parse(block_code, self.filename, 'exec')
-        ast.increment_lineno(parsed_block, start_pos.line_pos)
+        ast.increment_lineno(parsed_block, start_pos.lpos)
 
         compiled_block = compile(parsed_block, self.filename, 'exec')
 
@@ -289,7 +289,7 @@ class Template:
         def __init__(self, template, block_code, start_pos, end_pos):
             super().__init__(template, "block", start_pos, end_pos)
             self.block_code = block_code
-            self.start_col = start_pos.char_pos
+            self.start_col = start_pos.cpos
 
         def render(self, env):
 
