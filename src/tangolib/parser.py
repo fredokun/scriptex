@@ -21,6 +21,8 @@ import tangolib.template as template
 
 from tangolib.macros import DefCommand, DefEnvironment
 
+from tangolib.cmdparse import GLOBAL_COMMAND_LINE_ARGUMENTS
+
 class ParseError(Exception):
     pass
 
@@ -97,6 +99,8 @@ REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}
 REGEX_DEF_ENV_HEADER_SHORT = ere.ERegex(r"\\defEnv{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
+REGEX_CMD_LINE_OPTION = ere.ERegex(r"\\CmdLineOption\[(" + REGEX_IDENT_STR + r")\]")
+
 # main parser class
 
 class Parser:
@@ -130,6 +134,8 @@ class Parser:
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM, re_flags=ere.MULTILINE))
+
+        self.recognizers.append(lexer.Regexp("cmd_line_option", REGEX_CMD_LINE_OPTION))
 
         self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
         self.recognizers.append(lexer.Regexp("cmd_header", REGEX_CMD_HEADER))
@@ -364,7 +370,7 @@ class Parser:
             ###############################################
             ### Include and subdocuments                ###
             ###############################################
-            elif tok.token_type == "include":                
+            elif tok.token_type == "include":
                 unparsed_content.flush(current_element)
                 sub_filename = tok.value.group(1)
                 try:
@@ -382,7 +388,8 @@ class Parser:
                 sub_tokens = lexer.Tokenizer(lexer.StringTokenizer(sub_input))
                 sub_lex = lexer.Lexer(sub_tokens, *self.recognizers)
 
-                sub_doc = SubDocument(doc, sub_filename, tok.start_pos, sub_lex)
+                sub_doc = SubDocument(doc, sub_filename, tok.start_pos, lex)
+                current_element.append(sub_doc)
 
                 element_stack.append(current_element)
                 current_element = sub_doc
@@ -666,7 +673,6 @@ class Parser:
                 # register the environement
                 doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl)
             
-
 
             ###########################################
             ### Special characters (newlines, etc.) ###

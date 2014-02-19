@@ -108,6 +108,7 @@ class CmdLineParser:
             return cmd_args[1:]
 
         else:
+            next_opt = next_opt.lstrip('-')
             cmd_args = cmd_args[1:]
             if cmd_args and not cmd_args[0].startswith("-"):
                 self.cmd_args.extra_options[next_opt] = cmd_args[0]
@@ -116,7 +117,9 @@ class CmdLineParser:
             self.cmd_args.extra_options[next_opt] = True
             return cmd_args
 
-                
+   
+# Special global variable for parsed command line arguments
+GLOBAL_COMMAND_LINE_ARGUMENTS = None        
 
 
 if __name__ == "__main__":

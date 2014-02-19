@@ -2,6 +2,8 @@
 The Tango lexer
 '''
 
+from tangolib.cmdparse import GLOBAL_COMMAND_LINE_ARGUMENTS
+
 class ParsePosition:
     '''
     Representation of parse positions.
