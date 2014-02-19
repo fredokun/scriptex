@@ -245,6 +245,7 @@ class Text(AbstractMarkup):
     def __init__(self, doc, text, start_pos, end_pos):
         super().__init__(doc, start_pos, end_pos)
         self.text = text
+        self.markup_type = "text"
 
     def __repr__(self):
         return 'Text("{}")'.format(self.text)
@@ -260,6 +261,8 @@ class Preformated(AbstractMarkup):
         super().__init__(doc, start_pos, end_pos)
         self.text = text
         self.lang = lang
+
+        self.markup_type = "preformated"
 
     def __repr__(self):
         return 'Preformated("{}")'.format(self.text)
@@ -277,6 +280,8 @@ class Newlines(AbstractMarkup):
         super().__init__(doc, start_pos, end_pos)
         self.newlines = newlines
 
+        self.markyup_type = "newlines"
+
     def __repr__(self):
         return "Newlines({})".format(len(self.newlines))
 
@@ -290,6 +295,7 @@ class Spaces(AbstractMarkup):
     def __init__(self, doc, spaces, start_pos, end_pos):
         super().__init__(doc, start_pos, end_pos)
         self.spaces = spaces
+        self.markup_type = "spaces"
 
     def __repr__(self):
         return "Spaces({})".format(len(self.spaces))
@@ -302,6 +308,7 @@ class Spaces(AbstractMarkup):
 class SkipMarkup(AbstractMarkup):
     def __init__(self, doc, start_pos, end_pos):
         super().__init__(doc, start_pos, end_pos)
+        self.markup_type = "skip"
 
     def __repr__(self):
         return "SkipMarkup()"
@@ -310,3 +317,22 @@ class SkipMarkup(AbstractMarkup):
         ret = indent_string * indent_level
         ret += '<skip {} />\n'.format(self.positions_toxml())
         return ret
+
+
+def search_content_by_types(content, search_types):
+    for element in content:
+        if element.markup_type in search_types:
+            return element
+        else:
+            try:
+                if element.content:
+                    found = search_content_by_types(element.content, search_types)
+                    if found:
+                        return found
+            except:
+                pass
+
+    return None
+
+def search_content_by_type(content, search_type):
+    return search_content_by_types(content, {search_type})

@@ -71,8 +71,6 @@ REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.st
 REGEX_ENV_HEADER = ere.ERegex(r"\\begin{(" + REGEX_IDENT_STR + r")}(?:\[([^\]]+)\])?")
 REGEX_ENV_FOOTER = ere.ERegex(r"\\end{(" + REGEX_IDENT_STR + r")}")
 
-REGEX_INCLUDE = ere.ERegex(r"\\include{([^}]+)}")
-
 REGEX_SECTION = ere.ERegex(r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}")
 REGEX_MDSECTION = ere.ERegex(r"^(=+)\s+([^=]+)\s+(=*)(.*)$")
 
@@ -99,8 +97,6 @@ REGEX_DEF_ENV_HEADER = ere.ERegex(r"\\defEnvironment{(" + REGEX_IDENT_STR + r")}
 REGEX_DEF_ENV_HEADER_SHORT = ere.ERegex(r"\\defEnv{(" + REGEX_IDENT_STR + r")}(?:\[([0-9]+)\])?")
 REGEX_MACRO_CMD_ARG = ere.ERegex(r"\\macroCommandArgument\[([0-9]+)\]")
 
-REGEX_CMD_LINE_OPTION = ere.ERegex(r"\\CmdLineOption\[(" + REGEX_IDENT_STR + r")\]")
-
 # main parser class
 
 class Parser:
@@ -122,7 +118,7 @@ class Parser:
 
         self.recognizers.append(lexer.Regexp("env_header", REGEX_ENV_HEADER))
         self.recognizers.append(lexer.Regexp("env_footer", REGEX_ENV_FOOTER))
-        self.recognizers.append(lexer.Regexp("include", REGEX_INCLUDE))
+
         self.recognizers.append(lexer.Regexp("section", REGEX_SECTION))
         self.recognizers.append(lexer.Regexp("mdsection", REGEX_MDSECTION, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("inline_preformated", REGEX_INLINE_PREFORMATED))
@@ -134,8 +130,6 @@ class Parser:
         # markdown lists
         self.recognizers.append(lexer.Regexp("mdlist_open", REGEX_MDLIST_OPEN, re_flags=ere.MULTILINE))
         self.recognizers.append(lexer.Regexp("mdlist_item", REGEX_MDLIST_ITEM, re_flags=ere.MULTILINE))
-
-        self.recognizers.append(lexer.Regexp("cmd_line_option", REGEX_CMD_LINE_OPTION))
 
         self.recognizers.append(lexer.Regexp("cmd_pre_header", REGEX_CMD_PRE_HEADER))
         self.recognizers.append(lexer.Regexp("cmd_header", REGEX_CMD_HEADER))
@@ -230,12 +224,7 @@ class Parser:
                         current_element.end_pos = tok.start_pos
                         current_element = element_stack.pop()
 
-                if current_element.markup_type == "subdoc":
-                    lex = current_element.sublex
-                    doc = current_element.doc
-                    current_element = element_stack.pop()
-                else: # end of document
-                    continue_parse = False
+                continue_parse = False
 
             ### Line comment ###
             elif tok.token_type == "line_comment":
@@ -366,36 +355,6 @@ class Parser:
                         preformated += lex.next_char()
             elif tok.token_type == "open_curly":
                 unparsed_content.append_str("{", tok.start_pos, tok.end_pos)
-
-            ###############################################
-            ### Include and subdocuments                ###
-            ###############################################
-            elif tok.token_type == "include":
-                unparsed_content.flush(current_element)
-                sub_filename = tok.value.group(1)
-                try:
-                    sub_file = open(sub_filename, "r")
-                except OSError:
-                    raise ParseError(tok.start_pos, lex.pos, "Cannot open included file: {}".format(sub_filename))
-
-                try:
-                    sub_input = sub_file.read()
-                except IOError:
-                    raise ParseError(tok.start_pos, lex.pos, "Cannot read included file: {} (IO error)".format(sub_filename))
-                finally:
-                    sub_file.close()
-                    
-                sub_tokens = lexer.Tokenizer(lexer.StringTokenizer(sub_input))
-                sub_lex = lexer.Lexer(sub_tokens, *self.recognizers)
-
-                sub_doc = SubDocument(doc, sub_filename, tok.start_pos, lex)
-                current_element.append(sub_doc)
-
-                element_stack.append(current_element)
-                current_element = sub_doc
-                
-                doc = sub_doc
-                lex = sub_lex
 
             ###############################################
             ### Sections (latex-style or markdown-style ###
