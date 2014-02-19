@@ -1,0 +1,16 @@
+
+\chapter[label=chap:architecture]{Architecture du logiciel}
+
+Le logiciel Tango prend en entrée un document décrit dans le langage _TangoTex_  inspiré de Latex et enrichi par des idées provenant du format _Markdown_.
+
+Le document source en entrée est «avalé» par Tango et traité de la façon suivante:
+
+  1. le _parseur_ (analyseur lexical et syntaxique) de Tango transforme le texte du document en une représentation interne structurée (arbre de syntaxe abstraite ou AST)
+
+  2. le _processeur_ parcourt la représentation structurée et la transforme pour réaliser des modifications du document.
+
+  3. le _générateur_ récupère le document après transformation par le processeur, et génère un document cible permettant d'être affiché sur écran ou imprimé.
+
+
+Les deux étapes du _processeur_ et du _générateur_ sont hautement paramétrables.
+
