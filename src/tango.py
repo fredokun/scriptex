@@ -113,13 +113,17 @@ if __name__ == "__main__":
 
     parser = Parser()
 
-    tangoPrintln("Parsing from file '{}'".format(args.input_filename))
+    tangoPrintln("Parsing from file '{}' ...".format(args.input_filename))
 
     doc = parser.parse_from_file(args.input_filename)
+
+    tangoPrintln("==> parsing done.")
 
     # 2) processing
 
     if enable_process_phase:
+
+        tangoPrintln("Processing phase ...")
 
         processor = DocumentProcessor(doc)
         core.register_core_processors(processor)
@@ -137,15 +141,19 @@ if __name__ == "__main__":
             tangoErrln("CheckPython failed ...")
             fatal(str(e))
 
+        tangoPrintln("==> processing done.")
+
     # 3) generating
 
     generator = None
     
     if enable_generate_phase:
 
+        tangoPrintln("Generating phase ...")
+
         if args.output_type == "latex":
             # latex mode
-            tangoPrintln("Generating latex")
+            tangoPrintln("  => Generating latex")
             
             generator = LatexDocumentGenerator(doc, latex_config)
             generator.straighten_configuration()
@@ -156,9 +164,13 @@ if __name__ == "__main__":
 
         generator.generate()
         
+        tangoPrintln("==> generating done")
+
     # 4) writing
 
     if enable_write_phase:
+
+        tangoPrintln("Writing phase ...")
 
         if args.output_type == "latex":
             output_mode_dir = "tex"
@@ -168,9 +180,9 @@ if __name__ == "__main__":
         try:
             os.makedirs(output_directory)
         except OSError:
-            tangoPrint("Using ")
+            tangoPrint("  => Using ")
         else:
-            tangoPrint("Creating ")
+            tangoPrint("  => Creating ")
 
         tangoPrintln("output directory '{}'".format(output_directory))
 
@@ -181,16 +193,16 @@ if __name__ == "__main__":
         else:
             infile_without_ext = args.input_filename
 
-        
-
+    
         main_output_filename = output_directory + "/" + infile_without_ext + "-gen." + output_mode_dir
 
-        tangoPrintln("Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
+        tangoPrintln("  => Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
 
         main_output_file = open(main_output_filename, 'w')
         main_output_file.write(str(generator.output))
         main_output_file.close()
 
+        tangoPrintln("===> writing done.")
 
     print("... bye bye ...")
 

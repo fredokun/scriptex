@@ -35,6 +35,7 @@ class DefCommand:
             
 
         # template rendering for the body
+        self.cmd_template.compile()
         result_to_parse = self.cmd_template.render(tpl_env)
         
         # recursive parsing of template result
@@ -73,6 +74,7 @@ class DefEnvironment:
         for arg_num in range(1,self.env_arity+1):
             env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
 
+        self.env_header_tpl.compile()
         result_to_parse = self.env_header_tpl.render(env.template_env)
         
         # third: recursive parsing of template result
@@ -88,6 +90,7 @@ class DefEnvironment:
 
     def process_footer(self, document, env):
 
+        self.env_footer_tpl.compile()
         result_to_parse = self.env_footer_tpl.render(env.template_env)
         del env.template_env
         

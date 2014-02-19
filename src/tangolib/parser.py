@@ -364,7 +364,7 @@ class Parser:
             ###############################################
             ### Include and subdocuments                ###
             ###############################################
-            elif tok.token_type == "include":
+            elif tok.token_type == "include":                
                 unparsed_content.flush(current_element)
                 sub_filename = tok.value.group(1)
                 try:
@@ -377,14 +377,14 @@ class Parser:
                 except IOError:
                     raise ParseError(tok.start_pos, lex.pos, "Cannot read included file: {} (IO error)".format(sub_filename))
                 finally:
-                    sub_input.close()
+                    sub_file.close()
                     
                 sub_tokens = lexer.Tokenizer(lexer.StringTokenizer(sub_input))
                 sub_lex = lexer.Lexer(sub_tokens, *self.recognizers)
 
                 sub_doc = SubDocument(doc, sub_filename, tok.start_pos, sub_lex)
 
-                element_stack.push(current_element)
+                element_stack.append(current_element)
                 current_element = sub_doc
                 
                 doc = sub_doc
@@ -563,7 +563,6 @@ class Parser:
                                                 filename='<defCommand:{}>'.format(def_cmd_name),
                                                 base_pos=def_cmd_lex_start_pos)
 
-                def_cmd_tpl.compile()
 
                 # register the command
                 doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)
@@ -614,7 +613,8 @@ class Parser:
                         if ch == '{':
                             nb_curly += 1
                         def_env_header_lex_str += ch
-                    
+
+                import pdb; pdb.set_trace()                    
                 def_env_header_tpl = template.Template(def_env_header_lex_str,
                                                        safe_mode=False,
                                                        escape_var='#',
@@ -625,7 +625,6 @@ class Parser:
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
                                                        base_pos=def_env_header_lex_start_pos)
-                def_env_header_tpl.compile()
 
                 # prepare the template string for the footer part
 
@@ -665,8 +664,6 @@ class Parser:
                                                        escape_emit_function='emit',
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
                                                        base_pos=def_env_footer_lex_start_pos)
-                def_env_footer_tpl.compile()
-
                 # register the environement
                 doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl)
             
