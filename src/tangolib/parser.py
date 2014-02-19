@@ -614,7 +614,6 @@ class Parser:
                             nb_curly += 1
                         def_env_header_lex_str += ch
 
-                import pdb; pdb.set_trace()                    
                 def_env_header_tpl = template.Template(def_env_header_lex_str,
                                                        safe_mode=False,
                                                        escape_var='#',
