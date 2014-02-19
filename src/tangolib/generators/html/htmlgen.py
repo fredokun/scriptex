@@ -69,7 +69,7 @@ def guess_document_class(document):
 class HTMLDocumentGenerator(DocumentGenerator):
     def __init__(self, document, HTML_config):
         super().__init__(document)
-        # A verifier : config ?? c'est quoi ?        
+
         self.HTML_config = HTML_config
 
 
@@ -124,7 +124,7 @@ class HTMLDocumentGenerator(DocumentGenerator):
     <!-- Tango HTML preamble stops here -->
 """
 
-################################################################
+
 class DefaultHTMLCommandGenerator(CommandGenerator):
     def __init__(self):
         pass
@@ -132,23 +132,16 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
     def enter_command(self, generator, cmd):
         opts_str = "" if cmd.cmd_opts is None else "{}".format(cmd.cmd_opts)
         open_str = "" if not cmd.content else ""
-        if (cmd.cmd_name == "snip") :
-            generator.output.append(cmd.start_pos.lpos,"<b>")
-        else :
-            generator.output.append(cmd.start_pos.lpos, """<div class="command" name="{}" options="{}" open="{}">""".format(cmd.cmd_name, opts_str, open_str))
+        generator.output.append(cmd.start_pos.lpos, """<div class="command" name="{}" options="{}" open="{}">""".format(cmd.cmd_name, opts_str, open_str))
             generator.output.append(cmd.start_pos.lpos, """\n<!-- {} -->\n""".format(str(cmd.content)))
-            #exec(str(cmd.content).replace(">>>","")
 
     def exit_command(self, generator, cmd):
-        if (cmd.cmd_name == "snip") :
-            generator.output.append(cmd.start_pos.lpos,"</b>")
-        else :
-            if cmd.content:
-                if cmd.end_pos.lpos != cmd.start_pos.lpos:
-                    generator.output.append(cmd.end_pos.lpos, "</div>")
-                else:
-                    generator.output.append(None, "</div>")
-##############################################################
+        if cmd.content:
+            if cmd.end_pos.lpos != cmd.start_pos.lpos:
+                generator.output.append(cmd.end_pos.lpos, "</div>")
+            else:
+                generator.output.append(None, "</div>")
+
 
 
 class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
@@ -159,10 +152,10 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
         opts_str = "" if env.env_opts is None else "{}".format(env.env_opts)
         generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str))
         #generator.output.newline(None)
-        generator.output.append(env.start_pos.lpos, '<p>\n')
+        #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_environment(self, generator, env):
-        generator.output.append(env.end_pos.lpos, "</p>\n")
+        #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
         generator.output.append(env.end_pos.lpos, "</div>")
 
@@ -175,10 +168,10 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
     def enter_section(self, generator, sec):
         generator.output.append(sec.start_pos.lpos,  """<div class="section" name="{}" title="{}">\n""".format(sec.section_name, sec.section_title))
         #generator.output.newline(None)
-        generator.output.append(env.start_pos.lpos, '<p>\n')
+        #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_section(self, generator, sec):
-        generator.output.append(env.end_pos.lpos, "</p>\n")
+        #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
         generator.output.append(env.end_pos.lpos, "</div>\n")
 
@@ -186,18 +179,9 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
 class HTMLTextGenerator(TextGenerator):
     def __init__(self):
         pass
-
-    # def tohtml(self, indent_level=0, indent_string="  "):
-        # s = self.text
-        # edits = [('é', '&eacute;'), ('à', '&agrave;'), ('è', '&egrave;')] # etc.
-        # for search, replace in edits:
-            # s = s.replace(search, replace)
-        # ret = indent_string * indent_level
-        # ret += '<p {}>{}</p>\n'.format(self.positions_tohtml(), s)
-        # return ret
         
     def on_text(self, generator, text):
-        generator.output.append(text.start_pos.lpos,"""{}""".format(text.text))
+        generator.output.append(text.start_pos.lpos,"""<span class="text">{}</span>""".format(text.text))
 
 
 class HTMLPreformatedGenerator(PreformatedGenerator):

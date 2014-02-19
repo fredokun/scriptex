@@ -19,6 +19,8 @@ class DocumentGenerator:
         self.spaces_generator = None
         self.newlines_generator = None
         
+        self.preformated_generator = None
+        
     def register_command_generator(self, cmd_name, cmd_generator):
         if cmd_name in self.cmd_generators:
             raise GenerateError("Generator for command {} already registered".format(cmd_name))
