@@ -73,7 +73,7 @@ class CmdLineOptionProcessor(CommandProcessor):
         pass
 
     def process_command(self, processor, cmd):
-        import cmdparse
+        import tangolib.cmdparse
         option_name = None
         try:
             for opt in cmd.cmd_opts:
