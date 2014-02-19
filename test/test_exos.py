@@ -22,14 +22,14 @@ class TestExos(unittest.TestCase):
 \evalPython{{{3+2}}}
 """)
 
-        #print("Before processing = \n" + str(doc));
+        print("Before processing = \n" + str(doc));
 
         process = DocumentProcessor(doc)
         py_ctx = codeactive.PythonContext()
         codeactive.register_processors(process, py_ctx)
         process.process()
 
-        #print("After processing = \n" + str(doc));
+        print("After processing = \n" + str(doc));
 
     def test_def_python(self):
         parser = Parser()
@@ -71,7 +71,7 @@ def fact(n):
             print("CheckPython failed, aborpting ...")
             return
 
-        print("After process = \n" + str(doc))
+        #print("After process = \n" + str(doc))
 
         # 3) generating
         latex_config = LatexConfiguration()
