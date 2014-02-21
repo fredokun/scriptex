@@ -102,6 +102,12 @@ if __name__ == "__main__":
     if args.output_type == "latex":
         enable_write_phase = True
         latex_config = LatexConfiguration()
+    # other types
+    elif args.output_type == "xml":
+        enable_write_phase = True
+    elif args.output_type == "html":
+        enable_write_phase = True
+        html_config = HTMLConfiguration()
 
     if not enable_generate_phase:
         enable_write_phase = False
@@ -160,6 +166,14 @@ if __name__ == "__main__":
             
             generator = LatexDocumentGenerator(doc, latex_config)
             generator.straighten_configuration()
+        elif args.output_type == "xml":
+            # xml mode
+            tangoPrintln("Generating xml")
+            generator = XmlDocumentGenerator(doc)
+        elif args.output_type == "html:
+            # html mode
+            tangoPrintln("Generating html")
+            generator = HTMLDocumentGenerator(doc,html_config)
             
         if not generator:
             fatal("No generator set")
@@ -177,6 +191,10 @@ if __name__ == "__main__":
 
         if args.output_type == "latex":
             output_mode_dir = "tex"
+        elif args.output_type == "xml":
+            output_mode_dir = "xml"
+        elif args.output_type == "html":
+            output_mode_dir = "html"
            
         output_directory = args.output_directory + "/" + output_mode_dir
  
