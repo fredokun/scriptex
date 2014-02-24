@@ -3,7 +3,7 @@
 
 import sys
 
-from tangolib.cmdparse import CmdLineParser, GLOBAL_COMMAND_LINE_ARGUMENTS
+import tangolib.cmdparse
 
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
@@ -75,12 +75,11 @@ if __name__ == "__main__":
                  /____/        
 ---""", echo=False)
 
-    arg_parser = CmdLineParser(sys.argv)
+    arg_parser = tangolib.cmdparse.CmdLineParser(sys.argv)
 
     args = arg_parser.parse()
 
-    global GLOBAL_COMMAND_LINE_ARGUMENTS
-    GLOBAL_COMMAND_LINE_ARGUMENTS = args
+    tangolib.cmdparse.set_global_command_line_arguments(args)
 
     if args.banner:
         print(tangoBanner())

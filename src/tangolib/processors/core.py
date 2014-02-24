@@ -74,21 +74,21 @@ class CmdLineOptionProcessor(CommandProcessor):
 
     def process_command(self, processor, cmd):
         import tangolib.cmdparse
+
         option_name = None
-        try:
-            for opt in cmd.cmd_opts:
-                option_name = opt
-                break
-        except:
+        if isinstance(cmd.cmd_opts, str):
+            option_name = cmd.cmd_opts
+        else:
             raise ProcessError("Missing command line option")
 
         option_line_processor = None
         try:
-            option_line_processor = cmdparse.GLOBAL_COMMAND_LINE_ARGUMENTS[option_name]
+            cmd_args = tangolib.cmdparse.get_global_command_line_arguments()
+            option_line_processor = cmd_args.extra_options[option_name]
         except:
             raise ProcessError("No such command line option: {}".format(option_name))
 
-        return (Preformated(cmd.doc, cmd.start_pos, cmd.end_pos), False)
+        return (Preformated(cmd.doc, option_line_processor, "cmdline", cmd.start_pos, cmd.end_pos), False)
 
 
 def register_core_processors(processor):

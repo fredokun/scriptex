@@ -119,8 +119,15 @@ class CmdLineParser:
 
    
 # Special global variable for parsed command line arguments
-GLOBAL_COMMAND_LINE_ARGUMENTS = None        
+GLOBAL_COMMAND_LINE_ARGUMENTS = None
 
+def set_global_command_line_arguments(args):
+    global GLOBAL_COMMAND_LINE_ARGUMENTS
+    GLOBAL_COMMAND_LINE_ARGUMENTS = args
+
+def get_global_command_line_arguments():
+    global GLOBAL_COMMAND_LINE_ARGUMENTS
+    return GLOBAL_COMMAND_LINE_ARGUMENTS
 
 if __name__ == "__main__":
     import sys
