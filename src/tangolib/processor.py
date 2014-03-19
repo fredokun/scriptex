@@ -59,8 +59,8 @@ class DocumentProcessor:
                 if self.markup.markup_type == "command":
 
                     # First case: macro-command
-                    if self.markup.cmd_name in self.document.def_commands:
-                        new_content = self.document.def_commands[self.markup.cmd_name].process(self.document, self.markup)
+                    if self.markup.cmd_name in self.document.known_def_commands():
+                        new_content = self.document.fetch_def_command(self.markup.cmd_name).process(self.document, self.markup)
                         self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                         self.source_markup.content[self.source_index] = new_content
                     # Second case : normal command
@@ -80,8 +80,8 @@ class DocumentProcessor:
                 ### ENVIRONMENTS: entering processor
                 elif self.markup.markup_type == "environment":
                     # First case : macro-environment
-                    if self.markup.env_name in self.document.def_environments:
-                        new_content = self.document.def_environments[self.markup.env_name].process_header(self.document, self.markup)
+                    if self.markup.env_name in self.document.known_def_environments():
+                        new_content = self.document.fetch_def_environment(self.markup.env_name).process_header(self.document, self.markup)
                         self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
                         self.source_markup.content[self.source_index] = new_content                     
                     # Second case: normal environment
@@ -115,9 +115,9 @@ class DocumentProcessor:
                         check_env = self.environment_stack.pop()
                         assert check_env == self.markup,  "invalid environment stack (please report)"
                         # First case : macro-environment
-                        if self.markup.env_name in self.document.def_environments:
+                        if self.markup.env_name in self.document.known_def_environments():
                             
-                            new_content = self.document.def_environments[self.markup.env_name].process_footer(self.document, self.markup)
+                            new_content = self.document.fetch_def_environment(self.markup.env_name).process_footer(self.document, self.markup)
                             # import pdb; pdb.set_trace()
 
                             env_doc_markup = self.markup_stack.pop()

@@ -45,13 +45,23 @@ class Document(Markup):
         self.def_commands_ = dict() # dictionary for defined commands
         self.def_environments_ = dict() # dictionary for defined environments
 
-    @property
-    def def_commands(self):
-        return self.def_commands_
+    def register_def_command(self, def_cmd_name, def_cmd):
+        self.def_commands_[def_cmd_name] = def_cmd
 
-    @property
-    def def_environments(self):
-        return self.def_environments_
+    def known_def_commands(self):
+        return self.def_commands_.keys()
+
+    def fetch_def_command(self, def_cmd_name):
+        return self.def_commands_[def_cmd_name]
+
+    def register_def_environment(self, def_env_name, def_env):
+        self.def_environments_[def_env_name] = def_env
+
+    def known_def_environments(self):
+        return self.def_environments_.keys()
+
+    def fetch_def_environment(self, def_env_name):
+        return self.def_environments_[def_env_name]
 
     def __repr__(self):
         return "Document(content={})".format(repr(self.content))
@@ -63,10 +73,34 @@ class Document(Markup):
         ret += (indent_string * indent_level) + '</document>\n'
         return ret
 
-class SubDocument(Document):
-    def __init__(self, parent_doc, filename, start_pos, sublex):
+class ChildDocument(Document):
+    def __init__(self, parent_doc,  filename, sublex):
         super().__init__(filename, sublex)
         self.doc = parent_doc
+
+    def register_def_command(self, def_cmd_name, def_cmd):
+        # delegate to main document
+        self.doc.register_def_command(def_cmd_name, def_cmd)
+
+    def known_def_commands(self):
+        return self.doc.known_def_commands()
+
+    def fetch_def_command(self, def_cmd_name):
+        return self.doc.fetch_def_command(def_cmd_name)
+
+    def register_def_environment(self, def_env_name, def_env):
+        # delegate to main document
+        self.doc.register_def_environment(def_env_name, def_env)
+
+    def known_def_environments(self):
+        return self.doc.known_def_environments()
+
+    def fetch_def_environment(self, def_env_name):
+        return self.doc.fetch_def_environment(def_env_name)
+    
+class SubDocument(ChildDocument):
+    def __init__(self, parent_doc, filename, start_pos, sublex):
+        super().__init__(parent_doc, filename, sublex)
         self.markup_type = "subdoc"
         self.start_pos = start_pos
         self.sublex = sublex
@@ -81,10 +115,9 @@ class SubDocument(Document):
         ret += (indent_string * indent_level) + '</subdoc>\n'
         return ret
 
-class MacroCommandDocument(Document):
+class MacroCommandDocument(ChildDocument):
     def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
-        super().__init__(filename, sublex)
-        self.doc = parent_doc
+        super().__init__(parent_doc, filename, sublex)
         self.markup_type = "macrocmddoc"
         self.start_pos = start_pos
         self.end_pos = end_pos
@@ -184,10 +217,9 @@ class EnvArg(Markup):
         ret += (indent_string * indent_level) + "</env_arg>\n"
         return ret
 
-class MacroEnvDocument(Document):
+class MacroEnvDocument(ChildDocument):
     def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
-        super().__init__(filename, sublex)
-        self.doc = parent_doc
+        super().__init__(parent_doc, filename, sublex)
         self.markup_type = "macroenvdoc"
         self.start_pos = start_pos
         self.end_pos = end_pos
@@ -203,10 +235,9 @@ class MacroEnvDocument(Document):
         ret += (indent_string * indent_level) + '</subdoc>\n'
         return ret
 
-class MacroEnvFooterDocument(Document):
+class MacroEnvFooterDocument(ChildDocument):
     def __init__(self, parent_doc, filename, start_pos, end_pos, sublex):
-        super().__init__(filename, sublex)
-        self.doc = parent_doc
+        super().__init__(parent_doc, filename, sublex)
         self.markup_type = "macroenvfooterdoc"
         self.start_pos = start_pos
         self.end_pos = end_pos

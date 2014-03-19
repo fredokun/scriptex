@@ -531,7 +531,7 @@ class Parser:
 
 
                 # register the command
-                doc.def_commands[def_cmd_name] = DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl)
+                doc.register_def_command(def_cmd_name, DefCommand(doc, def_cmd_name, def_cmd_arity, tok.start_pos, tok.end_pos, def_cmd_tpl))
 
             ### macro-command argument
             elif tok.token_type == "macro_cmd_arg": ### XXX: dead code ?
@@ -630,8 +630,8 @@ class Parser:
                                                        filename='<defEnvironment:{}>'.format(def_env_name),
                                                        base_pos=def_env_footer_lex_start_pos)
                 # register the environement
-                doc.def_environments[def_env_name] = DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl)
-            
+                doc.register_def_environment(def_env_name,  DefEnvironment(doc, def_env_name, def_env_arity, def_env_header_lex_start_pos, lex.pos, def_env_header_tpl, def_env_footer_tpl))
+
 
             ###########################################
             ### Special characters (newlines, etc.) ###
