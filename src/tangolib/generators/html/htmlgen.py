@@ -1,7 +1,5 @@
 """Base for HTML generation.
 """
-
-
 from tangolib.generator import DocumentGenerator, CommandGenerator, EnvironmentGenerator, SectionGenerator
 from tangolib.generator import TextGenerator, PreformatedGenerator, SpacesGenerator, NewlinesGenerator
 
@@ -133,7 +131,7 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
         opts_str = "" if cmd.cmd_opts is None else "{}".format(cmd.cmd_opts)
         open_str = "" if not cmd.content else ""
         generator.output.append(cmd.start_pos.lpos, """<div class="command" name="{}" options="{}" open="{}">""".format(cmd.cmd_name, opts_str, open_str))
-            generator.output.append(cmd.start_pos.lpos, """\n<!-- {} -->\n""".format(str(cmd.content)))
+        generator.output.append(cmd.start_pos.lpos, """\n<!-- {} -->\n""".format(str(cmd.content)))
 
     def exit_command(self, generator, cmd):
         if cmd.content:
@@ -150,7 +148,7 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
     
     def enter_environment(self, generator, env):
         opts_str = "" if env.env_opts is None else "{}".format(env.env_opts)
-        generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str))
+        generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
@@ -166,14 +164,14 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
         pass
     
     def enter_section(self, generator, sec):
-        generator.output.append(sec.start_pos.lpos,  """<div class="section" name="{}" title="{}">\n""".format(sec.section_name, sec.section_title))
+        generator.output.append(sec.start_pos.lpos,  """<div class="section" name="{}" title="{}"><span class="sectionTitle">{}</span>""".format(sec.section_name, sec.section_title,sec.section_title))
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_section(self, generator, sec):
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
-        generator.output.append(env.end_pos.lpos, "</div>\n")
+        generator.output.append(sec.end_pos.lpos, "</div>\n")
 
 
 class HTMLTextGenerator(TextGenerator):
@@ -215,7 +213,7 @@ class HTMLNewlinesGenerator(NewlinesGenerator):
 
     def on_newlines(self, generator, newlines):
         lpos = newlines.start_pos.lpos
-        generator.output.append(None,"<br />")
+        generator.output.append(None,"<br/>")
         for _ in newlines.newlines:
             generator.output.newline(None)
             lpos += 1

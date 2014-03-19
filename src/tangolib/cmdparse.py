@@ -47,9 +47,8 @@ class CmdLineParser:
 
     def parse(self):
         self.tango_cmd = self.argv[0]
-
+        
         cmd_args = self.argv[1:]
-
         while cmd_args:
             cmd_args = self.parse_next(cmd_args)
 
@@ -64,6 +63,21 @@ class CmdLineParser:
 
             self.cmd_args.output_type =  "latex"
             return cmd_args[1:]
+
+        elif next_opt == "--html":
+            if self.cmd_args.output_type is not None:
+                raise CmdLineError("Mismatch {} option : output type already set".format(next_opt))
+
+            self.cmd_args.output_type =  "html"
+            return cmd_args[1:]
+
+        elif next_opt == "--xml":
+            if self.cmd_args.output_type is not None:
+                raise CmdLineError("Mismatch {} option : output type already set".format(next_opt))
+
+            self.cmd_args.output_type =  "xml"
+            return cmd_args[1:]
+
 
         elif next_opt == "--codeactive":
             self.cmd_args.code_active = True

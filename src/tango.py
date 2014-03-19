@@ -10,6 +10,9 @@ from tangolib.processor import DocumentProcessor
 from tangolib.processors import core, codeactive
 from tangolib.generators.latex.latexconfig import LatexConfiguration
 from tangolib.generators.latex.latexgen import LatexDocumentGenerator
+from tangolib.generators.html.htmlgen import HTMLDocumentGenerator
+from tangolib.generators.html.htmlconfig import HTMLConfiguration
+
 
 def tangoBanner():
     return \
@@ -79,6 +82,7 @@ if __name__ == "__main__":
 
     args = arg_parser.parse()
 
+
     global GLOBAL_COMMAND_LINE_ARGUMENTS
     GLOBAL_COMMAND_LINE_ARGUMENTS = args
 
@@ -126,7 +130,10 @@ if __name__ == "__main__":
 
     doc = parser.parse_from_file(args.input_filename)
 
+    
+
     tangoPrintln("==> parsing done.")
+
 
     # 2) processing
 
@@ -152,6 +159,9 @@ if __name__ == "__main__":
 
         tangoPrintln("==> processing done.")
 
+
+
+
     # 3) generating
 
     generator = None
@@ -163,24 +173,22 @@ if __name__ == "__main__":
         if args.output_type == "latex":
             # latex mode
             tangoPrintln("  => Generating latex")
-            
             generator = LatexDocumentGenerator(doc, latex_config)
             generator.straighten_configuration()
         elif args.output_type == "xml":
             # xml mode
             tangoPrintln("Generating xml")
             generator = XmlDocumentGenerator(doc)
-        elif args.output_type == "html:
+        elif args.output_type == "html":
             # html mode
             tangoPrintln("Generating html")
             generator = HTMLDocumentGenerator(doc,html_config)
-            
+
+
         if not generator:
             fatal("No generator set")
             
-
         generator.generate()
-        
         tangoPrintln("==> generating done")
 
     # 4) writing
