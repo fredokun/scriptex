@@ -287,8 +287,11 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
 
         if env.env_name == "abstract":
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))
-        elif env.env_name == "itemize" or env.env_name=="enumerate":
+        elif env.env_name == "itemize":
             generator.output.append(env.start_pos.lpos, """<ul class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))            
+        elif env.env_name=="enumerate":
+            generator.output.append(env.start_pos.lpos, """<ol class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))            
+
         else :
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
 
@@ -296,20 +299,18 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_environment(self, generator, env):
-        if env.end_pos is not None :
-            if env.env_name == "itemize" or env.env_name=="enumerate" :
+            if env.env_name == "itemize" :
                 generator.output.append(env.end_pos.lpos, "</ul>")
+            elif env.env_name=="enumerate" :
+                generator.output.append(env.end_pos.lpos, "</ol>")
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
             else:
                 generator.output.append(env.end_pos.lpos, "</div>")
-        else :
-            if env.env_name == "itemize" or env.env_name=="enumerate" :
-                generator.output.append(None, "</ul>")
+
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
-            else:
-                generator.output.append(None, "</div>")
+
 # Finir la suite
 
 class DefaultHTMLSectionGenerator(SectionGenerator):

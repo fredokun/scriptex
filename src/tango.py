@@ -132,8 +132,6 @@ if __name__ == "__main__":
 
     tangoPrintln("==> parsing done.")
     
-    print(doc)
-    sys.exit()
 
     # 2) processing
 
