@@ -105,12 +105,12 @@ class HTMLDocumentGenerator(DocumentGenerator):
                     print("\tmarkup type = command")
                     if self.markup.cmd_name in self.cmd_generators:
                         print("\t\tmarkup name deja dans la liste des cmd generator")
-                        if self.markup.cmd_name == "item":
+                        if self.markup.cmd_name == "item" or self.markup.cmd_name == "enumerate" :
                             self.onItem=self.markup
                         self.cmd_generators[self.markup.cmd_name].enter_command(self, self.markup)
                     elif self.default_command_generator is not None:
                         print("\t\tdefault command generator pas nulle")
-                        if self.markup.cmd_name == "item":
+                        if self.markup.cmd_name == "item" or self.markup.cmd_name == "enumerate" :
                             self.onItem=self.markup
                         self.default_command_generator.enter_command(self, self.markup)
                     if self.markup.preformated:
@@ -188,6 +188,7 @@ class HTMLDocumentGenerator(DocumentGenerator):
                         if self.spaces_generator is not None:
                             self.spaces_generator.on_spaces(self, child)
                     elif isinstance(child, Newlines):
+                        print("----> "+str(self.onItem))
                         if self.onItem is not None:
                             if self.onItem in self.cmd_generators:
                                 self.cmd_generators[self.onItem.cmd_name].exit_command(self, self.onItem)
@@ -268,6 +269,7 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
         elif cmd.cmd_name == "url":
             generator.output.append(None,"</a>")
             
+        print("---> "+str(cmd))
         if cmd.content:
             if cmd.end_pos.lpos != cmd.start_pos.lpos:
                 generator.output.append(cmd.end_pos.lpos, "</span>")
@@ -285,23 +287,29 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
 
         if env.env_name == "abstract":
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))
-        elif env.env_name == "itemize":
+        elif env.env_name == "itemize" or env.env_name=="enumerate":
             generator.output.append(env.start_pos.lpos, """<ul class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))            
         else :
-            print("OK")
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
 
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_environment(self, generator, env):
-        if env.env_name == "itemize":
-            generator.output.append(env.end_pos.lpos, "</ul>")
+        if env.end_pos is not None :
+            if env.env_name == "itemize" or env.env_name=="enumerate" :
+                generator.output.append(env.end_pos.lpos, "</ul>")
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
-        else:
-            generator.output.append(env.end_pos.lpos, "</div>")
-
+            else:
+                generator.output.append(env.end_pos.lpos, "</div>")
+        else :
+            if env.env_name == "itemize" or env.env_name=="enumerate" :
+                generator.output.append(None, "</ul>")
+        #generator.output.append(env.end_pos.lpos, "</p>\n")
+        #generator.output.newline(None)
+            else:
+                generator.output.append(None, "</div>")
 # Finir la suite
 
 class DefaultHTMLSectionGenerator(SectionGenerator):
