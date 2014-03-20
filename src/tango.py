@@ -130,8 +130,6 @@ if __name__ == "__main__":
 
     doc = parser.parse_from_file(args.input_filename)
 
-    
-
     tangoPrintln("==> parsing done.")
 
 
