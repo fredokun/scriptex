@@ -288,6 +288,7 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
         elif env.env_name == "itemize":
             generator.output.append(env.start_pos.lpos, """<ul class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))            
         else :
+            print("OK")
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
 
         #generator.output.newline(None)
