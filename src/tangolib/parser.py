@@ -252,7 +252,7 @@ class Parser:
                     lex.putback(ntok)  # command without argument
 
             # start of argument  (or dummy bracket somewhere)
-            elif current_element.markup_type == "environment" and current_element.parsing_argument and tok.token_type == "open_curly":
+            elif current_element.markup_type == "environment" and tok.token_type == "open_curly" and hasattr(current_element,"parsing_argument") and current_element.parsing_argument:
                 # first argument
                 env_arg = EnvArg(doc,current_element, tok.start_pos)
                 current_element.add_argument(env_arg)
@@ -397,12 +397,6 @@ class Parser:
                 mditem_style = "itemize" if (tok.value.group(2)[0] == '-' or tok.value.group(2)[0] == '+') else "enumerate"
 
                 unparsed_content.flush(current_element)
-                
-                # remove the previous item if it is active
-                if current_element.markup_type == "command" and current_element.cmd_name == "item":
-                    if not hasattr(current_element, "markdown_style"):
-                        raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
-                    current_element = element_stack.pop()
 
                 continue_closing = True
 
@@ -424,11 +418,11 @@ class Parser:
    
                         if current_element.markdown_indent == mditem_indent:
                             # add a further item at the same level
-                            element_stack.append(current_element)
+                            #### element_stack.append(current_element)
                             mditem = Command(doc, "item", None, tok.start_pos, tok.end_pos)
                             mditem.markdown_style = True
                             current_element.append(mditem)
-                            current_element = mditem
+                            #### current_element = mditem
                             continue_closing = False
                         elif current_element.markdown_indent > mditem_indent:
                             # close one
@@ -452,9 +446,9 @@ class Parser:
 
                         mditem = Command(doc, "item", None, tok.start_pos, tok.end_pos)
                         mditem.markdown_style = True
-                        current_element.append(mditem)
-                        element_stack.append(current_element)
-                        current_element = mditem
+                        current_element.append(mditem)                        
+                        #### element_stack.append(current_element)                        
+                        #### current_element = mditem
 
                 # loop if continue_closing == True
 
@@ -646,12 +640,6 @@ class Parser:
 
                 ##  Special treatment for markdown lists
                 if len(newlines) >= 2 or lex.at_eof():
-                    # remove the previous item if it is active
-                    if current_element.markup_type == "command" and current_element.cmd_name == "item":
-                        if not hasattr(current_element, "markdown_style"):
-                            raise ParseError(current_element.start_pos, tok.start_pos, "Mixing latex-style and markdown-style lists is forbidden")
-                        current_element = element_stack.pop()
-
                     # check if we need to finish some markdown list
                     element_stack_copy = element_stack[:]
                     element_stack_copy.append(current_element)
