@@ -17,14 +17,12 @@ Is it not really interesting otherwise.
 some % Tango will be  by far the best but this is a totally gratuitous comment.
 specificities. 
 
-{{$var1}}
-
 \begin{itemize}
 \item its input format is a simplified variant of LateX
 \item it is primarily aimed at two output formats:
 \begin{itemize}
 \item a latex output for producing PDF files (for screen or printout)
-\item a html/css/javascript format for interactive web pages 
+\item a html/css/javascript format for interactive web pages
 \end{itemize}
 \item its main goal is for producing scientific and technical document with
  enhanced interactivity without sacrifying the availability of a high-quality printable static version.
@@ -32,21 +30,10 @@ specificities.
 
 For very pragmatic reasons *Tango* is written in \url[Python]{http://www.python.org}.
 
-\section{ {{$var2}} Conclusion}
+\section{Conclusion}
 
-You should **definitely** try to use \emph{Tango {{$var1}}} when it's ready.
+You should **definitely** try to use \emph{Tango} when it's ready.
 
-\section{{% each [1,2,3] %}
-
-{% each [1,2,3] %}
-
-   {{var1}}
-
-{% end %}
-
-
-{% end %}
-}
+\section{Byebye}
 
 The end.
-

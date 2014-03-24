@@ -10,7 +10,6 @@ In particular it handles :
  - latex-style sectionning commands \part \chapter \section \subsection \subsubsection \paragraph
 
 """
-
 import tangolib.eregex as ere
 
 import tangolib.lexer as lexer

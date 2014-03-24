@@ -1,0 +1,69 @@
+import re
+
+# Start TOKEN
+VAR_TOKEN_START = '{{'
+VAR_TOKEN_END = '}}'
+
+INST_TOKEN_START = '{%'
+INST_TOKEN_END = '%}'
+
+TOKEN_REGEX = re.compile(r"(%s.*?%s|%s.*?%s)" 
+                         % (VAR_TOKEN_START,
+                            VAR_TOKEN_END,
+                            INST_TOKEN_START,
+                            INST_TOKEN_END))
+# End TOKEN
+
+# Start TOKEN classes
+class Text:
+    
+    def __init__(self,content):
+        self.content=content
+
+class Each:
+    
+    def __init__(self,arg):
+        self.arg=arg
+
+
+class Call:
+    
+    def __init__(self,arg):
+        self.arg=arg
+
+class Variable:
+    
+    def __init__(self,name):
+        self.name=name
+
+
+# End TOKEN classes
+
+
+
+class Lexer:
+
+    def __init__(self,content):
+        self.content=content
+
+    def process(self):
+        splitTokenFromContent = TOKEN_REGEX.split(self.content)
+        tokenizedContent = []
+
+        varTokenStartBegin = re.compile(r"^%s" % (VAR_TOKEN_START))
+        eachInstTokenStartBegin = re.compile(r"^%s each" % (INST_TOKEN_START))
+        callInstTokenStartBegin = re.compile(r"^%s call" % (INST_TOKEN_START))
+        
+        for elem in splitTokenFromContent :
+            if varTokenStartBegin.match(elem) is not None:
+                tokenizedContent.append(Variable("OK"))
+            elif eachInstTokenStartBegin.match(elem) is not None:
+                tokenizedContent.append(Each("OK"))
+            elif callInstTokenStartBegin.match(elem) is not None:
+                tokenizedContent.append(Call("OK"))
+            else:
+                tokenizedContent.append(Text("OK"))
+
+        print(splitTokenFromContent)
+        print(tokenizedContent)
+            
