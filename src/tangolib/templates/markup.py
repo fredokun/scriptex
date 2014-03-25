@@ -1,5 +1,4 @@
 class Node:
-
     def __init__(self):
         self.children=[]
 
@@ -7,26 +6,54 @@ class Node:
         self.children.append(node)
 
 
-class Text:
+class Text(Node):
     
     def __init__(self,content):
+        super().__init__()
         self.content=content
 
-class Each:
+
+    def toString(self):
+        return "Text"
+
+class Each(Node):
     
     def __init__(self,arg):
+        super().__init__()
         self.arg=arg
 
+    def append(self,node):
+        super().addChild(node)
 
-class Call:
+    def toString(self):
+        import pdb; pdb.set_trace()
+        print("Each")
+
+        for elem in self.children:
+            print("\t"+elem.toString())
+
+                
+
+
+class Call(Node):
     
     def __init__(self,arg):
+        super().__init__()
         self.arg=arg
 
-class Variable:
+    def toString(self):
+        print("Call")
+
+class Variable(Node):
     
     def __init__(self,name):
+        super().__init__()
         self.name=name
+        
+    
+    def toString(self):
+        print("Variable")
 
-class End : 
+
+class End(Node): 
     pass
