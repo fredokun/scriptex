@@ -1,4 +1,4 @@
-from markup import Text,Each,Call,Variable,End
+from markup import Text,Each,Call,Variable,End,Document
 
 class Parser:
 
@@ -10,10 +10,12 @@ class Parser:
         parsedContent=[]
 
         self.__nestedStructureFactory(self.tokenizedContent,
-                                 parsedContent)
+                                      parsedContent)
 
-        return parsedContent
-                        
+        doc = Document(parsedContent)
+        
+        return doc
+
 
     def __nestedStructureFactory(self,tokenList,storeList):
         

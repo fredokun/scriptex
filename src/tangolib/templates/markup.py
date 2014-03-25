@@ -6,6 +6,17 @@ class Node:
         self.children.append(node)
 
 
+class Document(Node):
+
+    def __init__(self,children):
+        super().__init__()
+        self.children=children
+
+    def addChild(self,node):
+        self.children.append(node)
+        
+    
+
 class Text(Node):
     
     def __init__(self,content):

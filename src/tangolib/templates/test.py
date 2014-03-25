@@ -19,9 +19,7 @@ p = Parser(lexedContent)
 parsedContent = p.process() 
 
 print(parsedContent)
-print("\n\n")
+print(parsedContent.children)
 
 
-for i in parsedContent:
-    print(i.toString())
 
