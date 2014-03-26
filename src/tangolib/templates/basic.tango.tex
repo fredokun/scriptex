@@ -17,7 +17,7 @@ Is it not really interesting otherwise.
 some % Tango will be  by far the best but this is a totally gratuitous comment.
 specificities. 
 
-{{$var1}}
+{{var1}}
 
 \begin{itemize}
 \item its input format is a simplified variant of LateX
@@ -32,21 +32,13 @@ specificities.
 
 For very pragmatic reasons *Tango* is written in \url[Python]{http://www.python.org}.
 
-\section{ {{$var2}} Conclusion}
+\section{ {{var2}} Conclusion}
 
-You should **definitely** try to use \emph{Tango {{$var1}}} when it's ready.
+You should **definitely** try to use \emph{Tango {{var1}}} when it's ready.
 
-\section{{% each [1,2,3] %}
-
-{% each [1,2,3] %}
-
-   {{var1}}
-
-{% end %}
-
-
-{% end %}
-}
+\section{{% each [1,2] %}
+{{var1}}
+{% end %}}
 
 The end.
 

@@ -1,3 +1,7 @@
+from compiler import CompilerError
+
+import re
+
 class Node:
     def __init__(self):
         self.children=[]
@@ -16,6 +20,13 @@ class Document(Node):
         self.children.append(node)
         
     
+    def compile(self,globalEnvironment):
+        compiledChildren =[]
+
+        for elem in self.children:
+            compiledChildren.append(elem.compile(globalEnvironment))
+
+        return compiledChildren
 
 class Text(Node):
     
@@ -23,9 +34,12 @@ class Text(Node):
         super().__init__()
         self.content=content
 
-
     def toString(self):
         return "Text"
+
+    def compile(self,globalEnvironment):
+        return self.content
+
 
 class Each(Node):
     
@@ -43,8 +57,40 @@ class Each(Node):
         for elem in self.children:
             print("\t"+elem.toString())
 
-                
+    def compile(self,globalEnvironment):
+        compiledContent=[]
+        listIterable = None
 
+        #TODO
+        # Eval l'argument par eval()
+        if re.match("^\[([a-zA-Z0-9]+\,)*[a-zA-Z0-9]+\]$",self.arg):
+            listIterable=eval(self.arg)
+        # OU check si la valeur est dans globalenv
+        else: 
+            path = self.arg.split('.')
+            hashMap = globalEnvironment
+        
+            for i in range(len(path)):
+                if path[i] in hashMap:
+                    hashMap=hashMap[path[i]]
+                else:
+                    raise CompilerError("Global environment doesn't contain the value of the variable")
+
+            if re.match("^\[([a-zA-Z0-9]+\,)*[a-zA-Z0-9]+\]$",hashMap):
+                listIterable=eval(hashMap)
+            else:
+                #TODO
+                raise CompilerError("TODO")
+            
+
+        for elem in listIterable:
+            for child in self.children:
+                compiledContent.append(child.compile(globalEnvironment))
+
+
+        return compiledContent
+
+                
 
 class Call(Node):
     
@@ -54,6 +100,7 @@ class Call(Node):
 
     def toString(self):
         print("Call")
+
 
 class Variable(Node):
     
@@ -65,6 +112,18 @@ class Variable(Node):
     def toString(self):
         print("Variable")
 
+    
+    def compile(self,globalEnvironment):
+        path = self.name.split('.')
+        hashMap = globalEnvironment
+
+        for i in range(len(path)):
+            if path[i] in hashMap:
+                hashMap=hashMap[path[i]]
+            else:
+                raise CompilerError("Global environment doesn't contain the value of the variable")
+
+        return hashMap
 
 class End(Node): 
     pass

@@ -1,4 +1,4 @@
-from markup import Text,Each,Call,Variable,End,Document
+from markup import Each,End,Document
 
 class Parser:
 
