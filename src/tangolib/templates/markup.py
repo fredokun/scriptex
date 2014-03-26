@@ -61,9 +61,13 @@ class Each(Node):
         compiledContent=[]
         listIterable = None
 
+        print(globalEnvironment)
+        print(self.arg)
+        print(re.match('\[([a-zA-Z0-9]+,)*[a-zA-Z0-9]+\]',self.arg))
+
         #TODO
         # Eval l'argument par eval()
-        if re.match("^\[([a-zA-Z0-9]+\,)*[a-zA-Z0-9]+\]$",self.arg):
+        if re.match("^\[(\w+,)*(\w)+\]$",self.arg):
             listIterable=eval(self.arg)
         # OU check si la valeur est dans globalenv
         else: 
