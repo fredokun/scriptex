@@ -16,4 +16,5 @@ class Compiler:
         # TODO for callable
         
     def process(self):
-        return self.document.compile(self.data)
+        print(self.document.compile(self.data))
+        return "".join(self.document.compile(self.data))

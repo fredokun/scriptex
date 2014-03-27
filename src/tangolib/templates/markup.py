@@ -51,7 +51,6 @@ class Each(Node):
         super().addChild(node)
 
     def toString(self):
-        import pdb; pdb.set_trace()
         print("Each")
 
         for elem in self.children:
@@ -59,40 +58,24 @@ class Each(Node):
 
     def compile(self,globalEnvironment):
         compiledContent=[]
-        listIterable = None
+        iterable = None
 
-        print(globalEnvironment)
-        print(self.arg)
-        print(re.match('\[([a-zA-Z0-9]+,)*[a-zA-Z0-9]+\]',self.arg))
+        if re.match('^\[([a-zA-Z0-9]+,)*[a-zA-Z0-9]+\]$',self.arg) :
+            iterable=eval(self.arg)
+        else :
+            iterable = valueOfEnvironment(self.arg,globalEnvironment)
+            if re.match('^\[([a-zA-Z0-9]+,)*[a-zA-Z0-9]+\]$',iterable) :
+                iterable=eval(iterable)    
+            else :
+                raise CompilerError("The value is not iterable")
 
-        #TODO
-        # Eval l'argument par eval()
-        if re.match("^\[(\w+,)*(\w)+\]$",self.arg):
-            listIterable=eval(self.arg)
-        # OU check si la valeur est dans globalenv
-        else: 
-            path = self.arg.split('.')
-            hashMap = globalEnvironment
-        
-            for i in range(len(path)):
-                if path[i] in hashMap:
-                    hashMap=hashMap[path[i]]
-                else:
-                    raise CompilerError("Global environment doesn't contain the value of the variable")
 
-            if re.match("^\[([a-zA-Z0-9]+\,)*[a-zA-Z0-9]+\]$",hashMap):
-                listIterable=eval(hashMap)
-            else:
-                #TODO
-                raise CompilerError("TODO")
-            
-
-        for elem in listIterable:
+        for elem in iterable:
             for child in self.children:
                 compiledContent.append(child.compile(globalEnvironment))
 
 
-        return compiledContent
+        return "".join(compiledContent)
 
                 
 
@@ -118,16 +101,26 @@ class Variable(Node):
 
     
     def compile(self,globalEnvironment):
-        path = self.name.split('.')
-        hashMap = globalEnvironment
-
-        for i in range(len(path)):
-            if path[i] in hashMap:
-                hashMap=hashMap[path[i]]
-            else:
-                raise CompilerError("Global environment doesn't contain the value of the variable")
-
-        return hashMap
+        return valueOfEnvironment(self.name,globalEnvironment)
 
 class End(Node): 
     pass
+
+
+
+
+
+# Usefull functions
+
+def valueOfEnvironment(path,globalEnvironment):
+    path = path.split('.')
+    hashMap = globalEnvironment
+
+    for i in range(len(path)):
+        if path[i] in hashMap:
+            hashMap=hashMap[path[i]]
+        else:
+            raise CompilerError("Global environment doesn't contain the value of the variable")
+        
+    return hashMap
+    

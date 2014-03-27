@@ -16,7 +16,7 @@ lexedContent = l.process()
 p = Parser(lexedContent)
 parsedContent = p.process() 
 
-data = { 'var1' : "OK1", 'var2' : "OK2" }
+data = { 'var1' : "OK1", 'var2' : "OK2", "list" : "[1,2]" }
 
 c = Compiler(parsedContent,data)
 print(c.process())

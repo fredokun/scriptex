@@ -28,9 +28,9 @@ class Lexer:
         splitTokenFromContent = TOKEN_REGEX.split(self.content)
         tokenizedContent = []
 
-        varToken = re.compile("^%s(\s*)(.+)(\s*)%s$" % (VAR_TOKEN_START,VAR_TOKEN_END))
-        eachInstToken = re.compile("^%s(\s*)each(\s*)(.+)(\s*)%s$" % (INST_TOKEN_START,INST_TOKEN_END))
-        callInstToken = re.compile("^%s(\s*)call(\s*)(.+)(\s*)%s$" % (INST_TOKEN_START,INST_TOKEN_END))
+        varToken = re.compile("^%s(\s*)(.+?)(\s*)%s$" % (VAR_TOKEN_START,VAR_TOKEN_END))
+        eachInstToken = re.compile("^%s(\s*)each(\s*)(.+?)(\s*)%s$" % (INST_TOKEN_START,INST_TOKEN_END))
+        callInstToken = re.compile("^%s(\s*)call(\s*)(.+?)(\s*)%s$" % (INST_TOKEN_START,INST_TOKEN_END))
         endInstToken = re.compile("^%s(\s*)end(\s*)%s$"  % (INST_TOKEN_START,INST_TOKEN_END))
         
 
