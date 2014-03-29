@@ -132,8 +132,7 @@ if __name__ == "__main__":
 
     tangoPrintln("==> parsing done.")
     
-    print("ok")
-    sys.exit()
+
     # 2) processing
 
     if enable_process_phase:

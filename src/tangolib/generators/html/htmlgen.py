@@ -4,12 +4,46 @@ from tangolib.generator import DocumentGenerator, CommandGenerator, EnvironmentG
 from tangolib.generator import TextGenerator, PreformatedGenerator, SpacesGenerator, NewlinesGenerator
 from tangolib.markup import Markup, Text, Preformated, Spaces, Newlines, SkipMarkup
 
+import json
+from os import path
+
+class HTMLTemplateError(Exception):
+    pass
+
+
+class HTMLTemplate:
+    
+    def __init__(self,data):
+        self.data=data
+
+    def getValue(self,aType,key):
+        if key in self.data[aType]:
+            return self.data[aType][key]
+        elif "default" in self.data[aType]:
+            return self.data[aType]["default"]
+        else:
+            raise HTMLTemplateError("Key and default value are undefined")
+
+class HTMLTemplateFactory:
+
+    @staticmethod
+    def createBasicTemplate():
+        filePath = path.realpath("../src/tangolib/generators/html/template/basic.template")
+        with open(filePath) as content_file:
+            content=content_file.read()
+
+        return HTMLTemplate(json.loads(content))
+
+
+
+
 class HTMLOutput:
     def __init__(self):
         self.output = []
         self.output_line = 1
         self.pos_map = dict()
         self.last_pos = 1
+
 
     def register_orig_pos(self, orig_pos):
         if orig_pos is None:
@@ -79,7 +113,8 @@ class HTMLDocumentGenerator(DocumentGenerator):
         self.preformated_generator = HTMLPreformatedGenerator()
         self.spaces_generator = HTMLSpacesGenerator()
         self.newlines_generator = HTMLNewlinesGenerator()
-
+        self.template = HTMLTemplateFactory.createBasicTemplate()
+      
         
     def straighten_configuration(self):
         if not self.HTML_config.document_class:
@@ -239,6 +274,15 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
     def enter_command(self, generator, cmd):
         opts_str = "" if cmd.cmd_opts is None else "{}".format(cmd.cmd_opts)
         open_str = "" if not cmd.content else ""
+
+
+        tag = generator.template.getValue("commands",cmd.cmd_name)
+
+
+        generator.output.append(cmd.start_pos.lpos, """<{} class="command" name="{}" options="{}" open="{}">""".format(tag,cmd.cmd_name, opts_str, open_str))            
+
+
+        '''
         if cmd.cmd_name == "item":
             generator.output.append(cmd.start_pos.lpos, """<li class="command" name="{}" options="{}" open="{}">""".format(cmd.cmd_name, opts_str, open_str))
         elif cmd.cmd_name == "url":
@@ -246,20 +290,33 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
         else :
            generator.output.append(cmd.start_pos.lpos, """<span class="command" name="{}" options="{}" open="{}">""".format(cmd.cmd_name, opts_str, open_str))
         #generator.output.append(cmd.start_pos.lpos, """<!-- {} -->\n""".format(str(cmd.content)))
+        '''
 
     def exit_command(self, generator, cmd):
+
+        tag = generator.template.getValue("commands",cmd.cmd_name)
+
+        if cmd.content:
+            if cmd.end_pos.lpos != cmd.start_pos.lpos:
+                generator.output.append(cmd.end_pos.lpos,"{}".format(tag))
+            else:
+                generator.output.append(None,"{}".format(tag))
+        else:
+            generator.output.append(None,"{}".format(tag))
+
+        '''
         if cmd.cmd_name == "item":
             generator.output.append(None,"</li>")
         elif cmd.cmd_name == "url":
             generator.output.append(None,"</a>")
             
-        print("---> "+str(cmd))
+
         if cmd.content:
             if cmd.end_pos.lpos != cmd.start_pos.lpos:
                 generator.output.append(cmd.end_pos.lpos, "</span>")
             else:
                 generator.output.append(None, "</span>")
-
+        '''
 
 
 class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
@@ -269,6 +326,18 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
     def enter_environment(self, generator, env):
         opts_str = "" if env.env_opts is None else "{}".format(env.env_opts)
 
+
+        tag = generator.template.getValue("environments",env.env_name)
+
+        
+        generator.output.append(env.start_pos.lpos, """<{} class="environnement" name="{}" options="{}">""".format(tag,env.env_name,opts_str,env.env_name))
+        
+
+        if (env.env_name!="abstract") and (env.env_name != "itemize") and (env.env_name!="enumerate"):
+            tag = generator.template.getValue("others")["text"]
+            generator.output.append(env.start_pos.lpos, """<{} class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
+
+        '''
         if env.env_name == "abstract":
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}">""".format(env.env_name,opts_str,env.env_name))
         elif env.env_name == "itemize":
@@ -278,11 +347,15 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
 
         else :
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
-
+        '''
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_environment(self, generator, env):
+        tag = generator.template.getValue("environments",env.env_name)
+
+        generator.output.append(env.end_pos.lpos,"{}".format(tag))
+        '''
             if env.env_name == "itemize" :
                 generator.output.append(env.end_pos.lpos, "</ul>")
             elif env.env_name=="enumerate" :
@@ -294,6 +367,7 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
 
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
+        '''
 
 # Finir la suite
 
@@ -302,7 +376,10 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
         pass
     
     def enter_section(self, generator, sec):
-            generator.output.append(sec.start_pos.lpos,  """<div class="section" name="{}" title="{}"><span class="sectionTitle">{}</span>""".format(sec.section_name, sec.section_title,sec.section_title))
+
+        tag = generator.template.getValue("sections",sec.section_name)
+
+        generator.output.append(sec.start_pos.lpos,  """<{} class="section" name="{}" title="{}"><span class="sectionTitle">{}</span>""".format(tag,sec.section_name, sec.section_title,sec.section_title))
 
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
@@ -310,7 +387,9 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
     def exit_section(self, generator, sec):
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
-        generator.output.append(sec.end_pos.lpos, "</div>\n")
+        tag = generator.template.getValue("sections",sec.section_name)
+        generator.output.append(sec.end_pos.lpos, "{}".format(tag))
+        #generator.output.append(sec.end_pos.lpos, "</div>\n")
 
 
 class HTMLTextGenerator(TextGenerator):
@@ -318,7 +397,8 @@ class HTMLTextGenerator(TextGenerator):
         pass
         
     def on_text(self, generator, text):
-        generator.output.append(text.start_pos.lpos,"""<span class="text">{}</span>""".format(text.text))
+        tag = generator.template.getValue("others","text")
+        generator.output.append(text.start_pos.lpos,"""<{} class="text">{}</{}>""".format(tag,text.text,tag))
 
 
 class HTMLPreformatedGenerator(PreformatedGenerator):
@@ -343,7 +423,8 @@ class HTMLSpacesGenerator(SpacesGenerator):
         pass
 
     def on_spaces(self, generator, spaces):
-        generator.output.append(None, " ")
+        tag = generator.template.getValue("others","space")
+        generator.output.append(None, "{}".format(tag))
 
 
 class HTMLNewlinesGenerator(NewlinesGenerator):
@@ -352,7 +433,8 @@ class HTMLNewlinesGenerator(NewlinesGenerator):
 
     def on_newlines(self, generator, newlines):
         lpos = newlines.start_pos.lpos
-        generator.output.append(None,"<br/>")
+        tag = generator.template.getValue("others","newline")
+        generator.output.append(None,"<{}/>".format(tag))
         for _ in newlines.newlines:
             generator.output.newline(None)
             lpos += 1
