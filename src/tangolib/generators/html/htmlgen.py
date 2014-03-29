@@ -98,41 +98,30 @@ class HTMLDocumentGenerator(DocumentGenerator):
 
         while self.markup_stack:
             self.markup, self.content_index = self.markup_stack.pop()
-            print("--"+self.markup.markup_type+"|"+str(self.content_index)+"--")
             if self.content_index == -1: # command/env not generated
-                print("command/env not generated")
                 if self.markup.markup_type == "command":
-                    print("\tmarkup type = command")
                     if self.markup.cmd_name in self.cmd_generators:
-                        print("\t\tmarkup name deja dans la liste des cmd generator")
                         if self.markup.cmd_name == "item" or self.markup.cmd_name == "enumerate" :
                             self.onItem=self.markup
                         self.cmd_generators[self.markup.cmd_name].enter_command(self, self.markup)
                     elif self.default_command_generator is not None:
-                        print("\t\tdefault command generator pas nulle")
                         if self.markup.cmd_name == "item" or self.markup.cmd_name == "enumerate" :
                             self.onItem=self.markup
                         self.default_command_generator.enter_command(self, self.markup)
                     if self.markup.preformated:
-                        print("\t\tmarkup de type preformatter")
                         if self.markup.cmd_name in self.cmd_generators:
-                            print("\t\tmarkup name deja dans la liste des cmd generator")
                             self.cmd_generators[self.markup.cmd_name].exit_command(self, self.markup)
                         elif self.default_command_generator is not None:
-                            print("\t\tdefault command generator pas nulle")
                             self.default_command_generator.exit_command(self, self.markup)
                     else:
-                        print("\t\tpas preformatter")
                         self.command_stack.append(self.markup)
                 elif self.markup.markup_type == "environment":
-                    print("\tenvironnement")
                     if self.markup.env_name in self.env_generators:
                         self.env_generators[self.markup.env_name].enter_environment(self, self.markup)
                     elif self.default_environment_generator is not None:
                         self.default_environment_generator.enter_environment(self, self.markup)
                     self.environment_stack.append(self.markup)
                 elif self.markup.markup_type == "section":
-                    print("\tsection")
                     if 0 in self.sec_generators:
                         self.sec_generators[0].enter_section(self, self.markup)
                     elif self.markup.section_depth in self.sec_generators:
@@ -147,7 +136,6 @@ class HTMLDocumentGenerator(DocumentGenerator):
                 if self.content_index == len(self.markup.content):
                     # done generating content
                     if self.markup.markup_type == "command" and self.markup.cmd_name != "item":
-                        print("end command")
                         check_cmd = self.command_stack.pop()
                         assert check_cmd == self.markup,  "invalid command stack (please report)"
                         if self.markup.cmd_name in self.cmd_generators:
@@ -155,7 +143,6 @@ class HTMLDocumentGenerator(DocumentGenerator):
                         elif self.default_command_generator is not None:
                             self.default_command_generator.exit_command(self, self.markup)
                     elif self.markup.markup_type == "environment":
-                        print("end environment")
                         check_env = self.environment_stack.pop()
                         assert check_env == self.markup,  "invalid environment stack (please report)"
                         if self.markup.env_name in self.env_generators:
@@ -163,7 +150,6 @@ class HTMLDocumentGenerator(DocumentGenerator):
                         elif self.default_environment_generator is not None:
                             self.default_environment_generator.exit_environment(self, self.markup)
                     elif self.markup.markup_type == "section":
-                        print("end section")
                         check_sec = self.section_stack.pop()
                         assert check_sec == self.markup, "Invalid section stack (please report)"
                         if 0 in self.sec_generators:
@@ -174,7 +160,6 @@ class HTMLDocumentGenerator(DocumentGenerator):
                             self.default_section_generator.exit_section(self, self.markup)
                 else: # generate a child
                     child = self.markup.content[self.content_index]
-                    print("Fils : "+str(child))
                     self.markup_stack.append((self.markup, self.content_index+1))
                     if isinstance(child, Markup):
                         self.markup_stack.append((child, -1))
@@ -188,7 +173,6 @@ class HTMLDocumentGenerator(DocumentGenerator):
                         if self.spaces_generator is not None:
                             self.spaces_generator.on_spaces(self, child)
                     elif isinstance(child, Newlines):
-                        print("----> "+str(self.onItem))
                         if self.onItem is not None:
                             if self.onItem in self.cmd_generators:
                                 self.cmd_generators[self.onItem.cmd_name].exit_command(self, self.onItem)
