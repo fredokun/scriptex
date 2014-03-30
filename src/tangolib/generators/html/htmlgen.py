@@ -35,8 +35,6 @@ class HTMLTemplateFactory:
         return HTMLTemplate(json.loads(content))
 
 
-
-
 class HTMLOutput:
     def __init__(self):
         self.output = []
@@ -44,7 +42,7 @@ class HTMLOutput:
         self.pos_map = dict()
         self.last_pos = 1
 
-        self.ident_level = 0
+        self.ident_level = 4
         self.isNewLine = False
 
     def addIdentLevel(self):
@@ -249,6 +247,8 @@ class HTMLDocumentGenerator(DocumentGenerator):
 
 
     def generate(self):
+        #import pdb; pdb.set_trace()
+
         self.HTML_config.check_configuration()
 
         self.output = HTMLOutput()
@@ -263,6 +263,7 @@ class HTMLDocumentGenerator(DocumentGenerator):
     <body>
 """.format(self.document.filename))
 
+        self.output.newline(None)
         self.generateHTML()
 
         self.output.append(None, \
@@ -484,7 +485,7 @@ class HTMLNewlinesGenerator(NewlinesGenerator):
     def on_newlines(self, generator, newlines):
         lpos = newlines.start_pos.lpos
         tag = generator.template.getValue("others","newline")
-        generator.output.append(None,"<{}/>".format(tag))
         for _ in newlines.newlines:
             generator.output.newline(None)
+            generator.output.append(None,"<{}/>".format(tag))
             lpos += 1
