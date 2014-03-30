@@ -418,7 +418,6 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
         generator.output.addIdentLevel()
         generator.output.newline(None)
 
-        print("Enter section "+ str(generator.output.ident_level))
 
         tag = generator.template.getValue("others","text")
         generator.output.append(sec.start_pos.lpos,  """<{} class="sectionTitle">{}</{}>""".format(tag,sec.section_title,tag))
@@ -434,7 +433,6 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
         generator.output.retrieveIdentLevel()
         generator.output.newline(None)
 
-        print("Exit section "+ str(generator.output.ident_level))
 
         tag = generator.template.getValue("sections",sec.section_name)
         generator.output.append(sec.end_pos.lpos, "</{}>".format(tag))
