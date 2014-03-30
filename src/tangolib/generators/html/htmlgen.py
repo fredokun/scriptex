@@ -44,6 +44,14 @@ class HTMLOutput:
         self.pos_map = dict()
         self.last_pos = 1
 
+        self.ident_level = 0
+        self.isNewLine = False
+
+    def addIdentLevel(self):
+        self.ident_level += 4
+
+    def retrieveIdentLevel(self):
+        self.ident_level -= 4
 
     def register_orig_pos(self, orig_pos):
         if orig_pos is None:
@@ -60,11 +68,23 @@ class HTMLOutput:
         
     def append(self, orig_pos, text):
         orig_pos = self.register_orig_pos(orig_pos)
-        self.output.append((orig_pos, self.output_line, text))
+
+        if self.isNewLine :
+            indent_text = []
+            for i in range(self.ident_level):
+                indent_text.append(" ")
+            indent_text.append(text)
+        else:
+            indent_text=text
+
+        self.output.append((orig_pos, self.output_line, ''.join(indent_text)))
         if self.output_line not in self.pos_map:
             self.pos_map[self.output_line] = orig_pos
 
+        self.isNewLine=False
+
     def newline(self, orig_pos):
+        self.isNewLine=True
         orig_pos = self.register_orig_pos(orig_pos)
         self.output.append((orig_pos, self.output_line, "\n"))
         if self.output_line not in self.pos_map:
@@ -298,11 +318,11 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
 
         if cmd.content:
             if cmd.end_pos.lpos != cmd.start_pos.lpos:
-                generator.output.append(cmd.end_pos.lpos,"{}".format(tag))
+                generator.output.append(cmd.end_pos.lpos,"</{}>".format(tag))
             else:
-                generator.output.append(None,"{}".format(tag))
+                generator.output.append(None,"</{}>".format(tag))
         else:
-            generator.output.append(None,"{}".format(tag))
+            generator.output.append(None,"</{}>".format(tag))
 
         '''
         if cmd.cmd_name == "item":
@@ -333,9 +353,15 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
         generator.output.append(env.start_pos.lpos, """<{} class="environnement" name="{}" options="{}">""".format(tag,env.env_name,opts_str,env.env_name))
         
 
+        generator.output.addIdentLevel()
+        generator.output.newline(None)
+
         if (env.env_name!="abstract") and (env.env_name != "itemize") and (env.env_name!="enumerate"):
-            tag = generator.template.getValue("others")["text"]
-            generator.output.append(env.start_pos.lpos, """<{} class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
+            tag = generator.template.getValue("others","text")
+            generator.output.append(env.start_pos.lpos, """<{} class="environnementTitle">{}</{}>""".format(tag,env.env_name,tag))
+
+
+        
 
         '''
         if env.env_name == "abstract":
@@ -348,13 +374,19 @@ class DefaultHTMLEnvironmentGenerator(EnvironmentGenerator):
         else :
             generator.output.append(env.start_pos.lpos, """<div class="environnement" name="{}" options="{}"><span class="environnementTitle">{}</span>""".format(env.env_name,opts_str,env.env_name))
         '''
-        #generator.output.newline(None)
+        #generator.output.newline(None)<
         #generator.output.append(env.start_pos.lpos, '<p>\n')
 
     def exit_environment(self, generator, env):
         tag = generator.template.getValue("environments",env.env_name)
 
-        generator.output.append(env.end_pos.lpos,"{}".format(tag))
+        
+        generator.output.retrieveIdentLevel()
+        generator.output.newline(None)
+
+        generator.output.append(env.end_pos.lpos,"</{}>".format(tag))
+        generator.output.newline(None)
+
         '''
             if env.env_name == "itemize" :
                 generator.output.append(env.end_pos.lpos, "</ul>")
@@ -379,7 +411,17 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
 
         tag = generator.template.getValue("sections",sec.section_name)
 
-        generator.output.append(sec.start_pos.lpos,  """<{} class="section" name="{}" title="{}"><span class="sectionTitle">{}</span>""".format(tag,sec.section_name, sec.section_title,sec.section_title))
+        generator.output.append(sec.start_pos.lpos,  """<{} class="section" name="{}" title="{}">""".format(tag,sec.section_name, sec.section_title))
+
+
+        generator.output.addIdentLevel()
+        generator.output.newline(None)
+
+        print("Enter section "+ str(generator.output.ident_level))
+
+        tag = generator.template.getValue("others","text")
+        generator.output.append(sec.start_pos.lpos,  """<{} class="sectionTitle">{}</{}>""".format(tag,sec.section_title,tag))
+
 
         #generator.output.newline(None)
         #generator.output.append(env.start_pos.lpos, '<p>\n')
@@ -387,8 +429,16 @@ class DefaultHTMLSectionGenerator(SectionGenerator):
     def exit_section(self, generator, sec):
         #generator.output.append(env.end_pos.lpos, "</p>\n")
         #generator.output.newline(None)
+
+        generator.output.retrieveIdentLevel()
+        generator.output.newline(None)
+
+        print("Exit section "+ str(generator.output.ident_level))
+
         tag = generator.template.getValue("sections",sec.section_name)
-        generator.output.append(sec.end_pos.lpos, "{}".format(tag))
+        generator.output.append(sec.end_pos.lpos, "</{}>".format(tag))
+
+        generator.output.newline(None)
         #generator.output.append(sec.end_pos.lpos, "</div>\n")
 
 

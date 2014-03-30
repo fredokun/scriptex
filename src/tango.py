@@ -225,6 +225,7 @@ if __name__ == "__main__":
 
         tangoPrintln("  => Writing main {} file '{}'".format(output_mode_dir, main_output_filename))
 
+
         main_output_file = open(main_output_filename, 'w')
         main_output_file.write(str(generator.output))
         main_output_file.close()
