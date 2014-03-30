@@ -301,7 +301,10 @@ class DefaultHTMLCommandGenerator(CommandGenerator):
 
 
         generator.output.append(cmd.start_pos.lpos, """<{} class="command" name="{}" options="{}" open="{}">""".format(tag,cmd.cmd_name, opts_str, open_str))            
-
+        
+        generator.output.newline(None)
+        generator.output.append(cmd.start_pos.lpos, """<!-- {} -->""".format(str(cmd.content)))
+        generator.output.newline(None)
 
         '''
         if cmd.cmd_name == "item":
