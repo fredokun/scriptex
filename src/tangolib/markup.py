@@ -1,4 +1,6 @@
 
+import optparse
+
 class AbstractMarkup:
     def __init__(self, doc, start_pos, end_pos):
         self.doc = doc
@@ -137,7 +139,7 @@ class Command(Markup):
     def __init__(self, doc, cmd_name, cmd_opts, header_start_pos, header_end_pos, preformated=False):
         super().__init__(doc, "command", header_start_pos, header_end_pos)
         self.cmd_name = cmd_name
-        self.cmd_opts = cmd_opts
+        self.cmd_opts = opt_parse.parse_options(cmd_opts)
         self.header_end_pos = header_end_pos
         self.preformated = preformated
         self.arguments = []
@@ -182,7 +184,7 @@ class Environment(Markup):
     def __init__(self, doc, env_name, env_opts, header_start_pos, header_end_pos):
         super().__init__(doc, "environment", header_start_pos, None)
         self.env_name = env_name
-        self.env_opts = env_opts
+        self.env_opts = optparse.parse_options(env_opts)
         self.header_end_pos = header_end_pos
         self.arguments = []
 

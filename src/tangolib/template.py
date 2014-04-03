@@ -277,7 +277,7 @@ class Template:
 
             genv = self.template.global_env()
             renv = self.template._install_render_env(env)
-            
+
             ret = eval(self.inline_code, genv, renv)
 
             return "{}".format(ret)
