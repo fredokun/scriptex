@@ -4,6 +4,8 @@ Parsing command and environment options.
 '''
 
 def parse_options(input, keysep='=', itemsep=','):
+    #import pdb; pdb.set_trace()
+
     opts = dict()
     i = 0
     parse_key = True
@@ -68,6 +70,7 @@ def parse_options(input, keysep='=', itemsep=','):
                 opts[current_key] = current_value
                 current_key = ""
                 current_value = ""
+                parse_key = True
                 i += 1
 
             else:
