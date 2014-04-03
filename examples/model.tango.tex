@@ -1,3 +1,52 @@
+Tango user's guide
+======
+
+
+------
+
+
+Synopsis
+------
+
+python3 [documentName] [tango.py path] [--html | --tex | --xml]
+
+
+Description
+------
+
+Tango is a programmable document processor which provides Latex/HTML output.
+Tango use documents written in a mix of latex and markdown-inspired short cuts.
+
+
+Using Pandoc
+------
+
+Before using Tango, you have to be into your document direction.
+After, open a terminal and launch the **Synopsis** command-line.
+
+Options
+------
+
+#### --html
+Produce a HTML output
+
+####
+Produce a Latex output
+
+#### --xml
+Produce a xml output which is useful for debugging or pretty-print.
+
+
+
+
+Tango syntax
+------
+
+If you get to know Markdown and Latex, it's quite easy since tango is inspired by them.
+
+#### Headers
+
+
 \section{section A}
 Section A text ...
 
@@ -22,7 +71,7 @@ Paragrah A text
 \subparagraph{paragraph A}
 Subparagrah A text
 
-
+#### Styles
 
 **double star bold text**
 __double underline bold text__
@@ -30,6 +79,8 @@ __double underline bold text__
 *single star emph text*
 \emph{emph command text}
 
+
+#### Lists
 
 List A :
 \begin{itemize}
@@ -47,7 +98,10 @@ Enumeration A :
 \end{enumerate}
 \end{enumerate}
 
-URL
+#### Extension
+
+
+###### URL
 \url[Python]{http://www.python.org}
 
 
