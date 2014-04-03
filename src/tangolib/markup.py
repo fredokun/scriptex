@@ -141,6 +141,7 @@ class MacroCommandDocument(ChildDocument):
 class Command(Markup):
     def __init__(self, doc, cmd_name, cmd_opts, header_start_pos, header_end_pos, preformated=False):
         super().__init__(doc, "command", header_start_pos, header_end_pos)
+
         self.cmd_name = cmd_name
 
         if not cmd_opts:

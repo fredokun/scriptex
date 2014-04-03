@@ -75,10 +75,12 @@ class CmdLineOptionProcessor(CommandProcessor):
     def process_command(self, processor, cmd):
         import tangolib.cmdparse
 
+
         option_name = None
-        if isinstance(cmd.cmd_opts, str):
-            option_name = cmd.cmd_opts
-        else:
+        for name in cmd.cmd_opts:
+            option_name = name
+
+        if not option_name:
             raise ProcessError("Missing command line option")
 
         option_line_processor = None

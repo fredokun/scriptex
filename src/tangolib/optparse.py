@@ -28,7 +28,7 @@ def parse_options(input, keysep='=', itemsep=','):
                 parse_key = False
                 i += 1
 
-            elif ch == itemsep:
+            elif ch == itemsep or i+1 == len(input):
                 # if next character is item separator
                 if i+1 < len(input):
                     ch2 = input[i+1]
@@ -39,6 +39,8 @@ def parse_options(input, keysep='=', itemsep=','):
                         continue # jump directly
                     
                 # this is a key-only entry
+                if ch != itemsep:
+                    current_key += ch
                 opts[current_key] = current_key
                 current_key = ""
                 i += 1
@@ -50,7 +52,7 @@ def parse_options(input, keysep='=', itemsep=','):
 
         else:
             # in parse-value mode
-            if ch == itemsep:
+            if ch == itemsep or i+1 == len(input):
                 # if next character is item separator
                 if i+1 < len(input):
                     ch2 = input[i+1]
@@ -61,6 +63,8 @@ def parse_options(input, keysep='=', itemsep=','):
                         continue # jump directly
                     
                 # the entry is parsed
+                if ch != itemsep:
+                    current_value += ch
                 opts[current_key] = current_value
                 current_key = ""
                 current_value = ""
@@ -71,5 +75,6 @@ def parse_options(input, keysep='=', itemsep=','):
                 current_value += ch
                 i += 1
 
-        return opts
+    # end of while
+    return opts
     
