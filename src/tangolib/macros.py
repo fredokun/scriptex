@@ -33,6 +33,7 @@ class DefCommand:
         for arg_num in range(1,self.cmd_arity+1):
             tpl_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
             
+        tpl_env['options'] = command.cmd_opts
 
         # template rendering for the body
         self.cmd_template.compile()
@@ -73,6 +74,8 @@ class DefEnvironment:
         env.template_env = dict()
         for arg_num in range(1,self.env_arity+1):
             env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
+
+        env.template_env['options'] = env.env_opts
 
         self.env_header_tpl.compile()
         result_to_parse = self.env_header_tpl.render(env.template_env)
