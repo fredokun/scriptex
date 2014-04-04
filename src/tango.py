@@ -159,7 +159,6 @@ if __name__ == "__main__":
 
 
 
-
     # 3) generating
 
     generator = None
