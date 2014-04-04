@@ -1,0 +1,17 @@
+{ "commands" : 
+  	     { "item" : "li",
+	       "url"  :	"a",
+	       "default" : "span"
+	     },
+  "environments" :
+  		 { "itemize" : "ul",
+		   "enumerate" : "ol",
+		   "default" : "div"
+		 },
+  "sections" :
+  		 { "default" : "div" },
+  "others" : { "text" : "span",
+  	       "space" : " ",
+	       "newline" : "br"
+	     }
+}

@@ -1,0 +1,10 @@
+# Ignore tmp files
+
+*~
+*#
+
+
+# Ignore output
+
+examples/tango_output
+examples/tango_output/*
