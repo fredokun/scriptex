@@ -27,7 +27,6 @@ class PythonContext:
         return ret
 
     def exec_python(self, source, filename='<unknown>', line_pos=None):
-        import pdb; pdb.set_trace()
         code = ast.parse(source, filename, 'exec')
         if line_pos is not None:
             ast.increment_lineno(code, line_pos)
