@@ -20,8 +20,8 @@ class TemplateRenderError(Exception):
 
 class Template:
     def __init__(self, 
-                 template, 
-                 safe_mode=False, 
+                 template,
+                 global_env,
                  escape_var="$", escape_inline="%", escape_block="%", escape_block_open="{", escape_block_close="}",
                  escape_emit_function="emit",
                  filename='<unknown>',
@@ -34,6 +34,8 @@ class Template:
         assert escape_block_close != escape_block, "Require distinct escape block close"
 
         self.template = template
+        self.global_env = global_env
+
         self.escape_var = escape_var
         self.escape_inline = escape_inline
         self.escape_block = escape_block
@@ -44,19 +46,8 @@ class Template:
         else:
             self.base_pos = base_pos
         self.escape_emit_function = escape_emit_function
-        self.safe_mode = safe_mode
         self.ctemplate = None
         self.filename = filename
-
-    def global_env(self):
-        genv = None
-        if self.safe_mode:
-            genv = dict()
-        else:
-            genv = globals().copy()
-
-        return genv
-
 
     def _install_render_env(self, env):
         global ___Template_emit_function___
@@ -274,7 +265,7 @@ class Template:
 
         def render(self, env):
 
-            genv = self.template.global_env()
+            genv = self.template.global_env
             renv = self.template._install_render_env(env)
 
             ret = eval(self.inline_code, genv, renv)
@@ -292,7 +283,7 @@ class Template:
 
         def render(self, env):
 
-            genv = self.template.global_env()
+            genv = self.template.global_env
             renv = self.template._install_render_env(env)
             
             Template.___Template_render_string___ = StringBuffer()

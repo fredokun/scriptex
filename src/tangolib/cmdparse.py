@@ -13,6 +13,7 @@ class CmdLineArguments:
         self.output_type = None
         self.modes = set()
         self.code_active = False
+        self.safe_mode = False
         self.banner = False
         self.help = False
         self.extra_options = dict()
@@ -24,6 +25,7 @@ Help = {}
 Output type = {}
 Modes = {}
 Code Active = {}
+Safe Mode = {}
 Input file name = {}
 Output directory = {}
 Extra options = {}
@@ -32,6 +34,7 @@ Extra options = {}
            self.output_type,
            self.modes,
            self.code_active,
+           self.safe_mode,
            self.input_filename,
            self.output_directory,
            self.extra_options)
@@ -101,6 +104,10 @@ class CmdLineParser:
 
             return cmd_args[1:]
 
+        elif next_opt == "--safe-mode" or next_opt == "-s":
+            self.cmd_args.safe_mode = True
+            return cmd_args[1:]
+            
         elif not next_opt.startswith("-"):
             if self.cmd_args.input_filename is not None:
                 raise CmdLineError("Cannot handle '{}': input file already set".format(next_opt))

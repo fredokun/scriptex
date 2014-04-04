@@ -11,8 +11,8 @@ from tangolib.processor import CommandProcessor
 from tangolib import markup
 
 class PythonContext:
-    def __init__(self):
-        self.globals = __builtins__ # dictionnary of globals
+    def __init__(self, tango_globals):
+        self.globals = tango_globals
         self.pprint = pprint.PrettyPrinter()
         self.defs = dict()
 
@@ -27,6 +27,7 @@ class PythonContext:
         return ret
 
     def exec_python(self, source, filename='<unknown>', line_pos=None):
+        import pdb; pdb.set_trace()
         code = ast.parse(source, filename, 'exec')
         if line_pos is not None:
             ast.increment_lineno(code, line_pos)

@@ -23,6 +23,8 @@ from tangolib.macros import DefCommand, DefEnvironment
 
 from tangolib.cmdparse import GLOBAL_COMMAND_LINE_ARGUMENTS
 
+import tangolib.globalvars as globvars
+
 class ParseError(Exception):
     pass
 
@@ -71,7 +73,7 @@ REGEX_LINE_COMMENT = ere.ERegex('%') + ere.zero_or_more(ere.any_char()) + ere.st
 REGEX_ENV_HEADER = ere.ERegex(r"\\begin{(" + REGEX_IDENT_STR + r")}(?:\[([^\]]+)\])?")
 REGEX_ENV_FOOTER = ere.ERegex(r"\\end{(" + REGEX_IDENT_STR + r")}")
 
-REGEX_SECTION = ere.ERegex(r"\\(part|chapter|section|subsection|subsubsection|paragraph){([^}]+)}")
+REGEX_SECTION = ere.ERegex(r"\\(part|chapter|section|subsection|subsubsection|paragraph)(?:\[([^\]]+)\])?{([^}]+)}")
 REGEX_MDSECTION = ere.ERegex(r"^(=+)\s+([^=]+)\s+(=*)(.*)$")
 
 REGEX_CMD_PRE_HEADER = ere.ERegex(r"\\(" + REGEX_IDENT_STR + r")(?:\[([^\]]+)\])?{{{")
@@ -513,7 +515,7 @@ class Parser:
 
 
                 def_cmd_tpl = template.Template(def_cmd_lex_str,
-                                                safe_mode = False,
+                                                globvars.TANGO_EVAL_GLOBAL_ENV,
                                                 escape_var='#',
                                                 escape_inline='@',
                                                 escape_block='@',
@@ -575,7 +577,7 @@ class Parser:
                         def_env_header_lex_str += ch
 
                 def_env_header_tpl = template.Template(def_env_header_lex_str,
-                                                       safe_mode=False,
+                                                       globvars.TANGO_EVAL_GLOBAL_ENV,
                                                        escape_var='#',
                                                        escape_inline='@',
                                                        escape_block='@',
@@ -614,7 +616,7 @@ class Parser:
                         def_env_footer_lex_str += ch
                     
                 def_env_footer_tpl = template.Template(def_env_footer_lex_str,
-                                                       safe_mode=False,
+                                                       globvars.TANGO_EVAL_GLOBAL_ENV,
                                                        escape_var='#',
                                                        escape_inline='@',
                                                        escape_block='@',

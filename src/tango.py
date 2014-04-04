@@ -4,6 +4,7 @@
 import sys
 
 import tangolib.cmdparse
+import tangolib.globalvars
 
 from tangolib.parser import Parser
 from tangolib.processor import DocumentProcessor
@@ -65,6 +66,7 @@ def fatal(*args):
     tangoErrln(" ==> aborpting ...")
     sys.exit(1)
 
+
 if __name__ == "__main__":
 
     tangoPrintln("""   ______                      
@@ -93,6 +95,9 @@ if __name__ == "__main__":
     if not enable_process_phase:
         enable_generate_phase = False
 
+    if args.safe_mode:
+        tangoPrintln("Safe mode enabled")
+    
     if enable_generate_phase:
         tangoPrintln("Generate phase enabled")
 
@@ -107,6 +112,9 @@ if __name__ == "__main__":
 
     if enable_write_phase:
         tangoPrintln("Write phase enabled")
+
+
+    tangolib.globalvars.init_global_vars()
 
     import os
     tangoPrintln("Current work directory = '{}'".format(os.getcwd()))
@@ -134,7 +142,7 @@ if __name__ == "__main__":
         if args.code_active:
             tangoPrintln("Enabling active python code processors")
 
-            py_ctx = codeactive.PythonContext()
+            py_ctx = codeactive.PythonContext(tangolib.globalvars.TANGO_EVAL_GLOBAL_ENV)
             codeactive.register_processors(processor, py_ctx)
 
         try:
