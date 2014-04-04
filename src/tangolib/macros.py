@@ -76,10 +76,8 @@ class DefEnvironment:
             env.template_env['_'+str(arg_num)] = r"\macroCommandArgument[{}]".format(arg_num-1)
 
         env.template_env['options'] = env.env_opts
-
+        
         self.env_header_tpl.compile()
-
-        # import pdb; pdb.set_trace()
 
         result_to_parse = self.env_header_tpl.render(env.template_env)
         

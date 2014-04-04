@@ -84,7 +84,6 @@ class Template:
         initial_offset = start_pos.offset
         current_pos = start_pos
 
-
         part = ""
         while current_pos.offset - initial_offset < len_template:
             current_char = self.template[current_pos.offset - initial_offset]
@@ -116,7 +115,7 @@ class Template:
             else: # a literal character
                 part += current_char
                 current_pos = current_pos.next_char()
-                if current_char in { self.escape_var, self.escape_inline, self.escape_block, self.escape_block_open, self.escape_block_close }:
+                if current_char in { self.escape_var, self.escape_inline, self.escape_block }:
                     current_pos = current_pos.next_char() # protected escape
 
         # end of while
