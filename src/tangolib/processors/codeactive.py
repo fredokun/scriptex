@@ -66,7 +66,10 @@ class DefPythonProcessor(CommandProcessor):
 
     def process_command(self, processor, cmd):
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
-        self.python_context.def_python(cmd.cmd_opts, cmd.content, processor.document.filename, cmd.header_end_pos.lpos)
+        def_name = None
+        for name in cmd.cmd_opts:
+            def_name = name
+        self.python_context.def_python(def_name, cmd.content, processor.document.filename, cmd.header_end_pos.lpos)
         # TODO: log the registered function
         return (markup.SkipMarkup(cmd.doc, cmd.start_pos, cmd.end_pos), False)
         

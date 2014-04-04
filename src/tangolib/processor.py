@@ -50,7 +50,8 @@ class DocumentProcessor:
         self.command_stack = []
         self.section_stack = []
 
-        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        # BREAKPOINT >>> # 
+        #import pdb; pdb.set_trace()  # <<< BREAKPOINT #
 
         while self.markup_stack:
             self.markup, self.content_index, self.source_markup, self.source_index = self.markup_stack.pop()
@@ -81,13 +82,22 @@ class DocumentProcessor:
                 elif self.markup.markup_type == "environment":
                     # First case : macro-environment
                     if self.markup.env_name in self.document.known_def_environments():
-                        new_content = self.document.fetch_def_environment(self.markup.env_name).process_header(self.document, self.markup)
-                        self.markup_stack.append((new_content, -1, self.source_markup, self.source_index))
-                        self.source_markup.content[self.source_index] = new_content                     
+                        header_content = self.document.fetch_def_environment(self.markup.env_name).process_header(self.document, self.markup)
+                        header_content.content.extend(self.markup.content)
+                        footer_content = self.document.fetch_def_environment(self.markup.env_name).process_footer(self.document, self.markup)
+                        header_content.content.extend(footer_content.content)
+                        self.markup.markup_type = "command"   # XXX: that's awful !
+                        self.markup.preformated = True # XXX: even more awful !
+
+                        # self.markup_stack.append((header_content, -1, self.source_markup, self.source_index))
+                        self.source_markup.content[self.source_index] = header_content                     
                     # Second case: normal environment
                     elif self.markup.env_name in self.env_processors:
                         self.env_processors[self.markup.env_name].enter_environment(self, self.markup)
-                    self.environment_stack.append(self.markup)
+                        self.environment_stack.append(self.markup)
+                    # Thid case : without processing
+                    else:
+                        self.environment_stack.append(self.markup)
                 elif self.markup.markup_type == "section":
                     if 0 in self.sec_processors:
                         self.sec_processors[0].enter_section(self, self.markup)
@@ -116,12 +126,8 @@ class DocumentProcessor:
                         assert check_env == self.markup,  "invalid environment stack (please report)"
                         # First case : macro-environment
                         if self.markup.env_name in self.document.known_def_environments():
-                            
-                            new_content = self.document.fetch_def_environment(self.markup.env_name).process_footer(self.document, self.markup)
-                            # import pdb; pdb.set_trace()
+                            assert False, "Unexpended defined environment: {}".format(self.markup.env_name)
 
-                            env_doc_markup = self.markup_stack.pop()
-                            env_doc_markup[0].content.extend(new_content.content)
                         # Second case: normal environment
                         else:                     
                             if self.markup.env_name in self.env_processors:

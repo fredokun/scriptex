@@ -34,14 +34,14 @@ brave
 
 """)
 
-        print("env_simple_text (before expansion) = {}".format(doc))
+        #print("env_simple_text (before expansion) = {}".format(doc))
 
         processor = DocumentProcessor(doc)
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         processor.process()
 
-        print("env_simple_text (after expansion) = {}".format(doc))
+        #print("env_simple_text (after expansion) = {}".format(doc))
 
     def test_macro_env_simple_replace(self):
         parser = Parser()
@@ -58,14 +58,14 @@ new
 
 """)
 
-        print("env_simple_replace (before expansion) = {}".format(doc))
+        #print("env_simple_replace (before expansion) = {}".format(doc))
 
         processor = DocumentProcessor(doc)
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         processor.process()
 
-        print("env_simple_replace (after expansion) = {}".format(doc))
+        #print("env_simple_replace (after expansion) = {}".format(doc))
         
     def test_macro_ev_nested_replace(self):
         parser = Parser()
@@ -85,14 +85,52 @@ brave
 
 """)
 
-        print("env_nested_replace (before expansion) = {}".format(doc))
+        #print("env_nested_replace (before expansion) = {}".format(doc))
 
         processor = DocumentProcessor(doc)
 
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         processor.process()
 
-        print("env_nested_replace (after expansion) = {}".format(doc))
+        #print("env_nested_replace (after expansion) = {}".format(doc))
+
+
+    def test_macro_env_active_simple(self):
+        parser = Parser()
+
+        doc = parser.parse_from_string(r"""
+
+% macro definition
+\defEnv{myenv}{
+\execPython{{{
+enter_count += 1
+}}}
+}{
+\execPython{{{
+leave_count += 1
+}}}
+}
+
+\execPython{{{
+enter_count = 0
+leave_count = 0
+}}}
+
+% macro expansion
+\begin{myenv}
+enter then leave
+\end{myenv}
+
+""")
+
+        print("env_active_simple (before expansion) = {}".format(doc))
+
+        processor = DocumentProcessor(doc)
+
+        # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
+        processor.process()
+
+        print("env_active_simple (after expansion) = {}".format(doc))
 
 
 if __name__ == '__main__':

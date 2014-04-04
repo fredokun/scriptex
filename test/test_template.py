@@ -13,7 +13,7 @@ from tangolib.template import Template
 
 class TestBasicTemplates(unittest.TestCase):
     def test_variable_escape(self):
-        template = Template("The value of myvar is '$myvar' obtained by $$myvar\n and that's it ...")
+        template = Template("The value of myvar is '$myvar' obtained by $$myvar\n and that's it ...", dict())
         template.compile()
         # print(template.ctemplate)
         myvar = 42
@@ -21,7 +21,7 @@ class TestBasicTemplates(unittest.TestCase):
         print(ret)
 
     def test_alt_variable_escape(self):
-        template = Template("The value of myvar is '?myvar' obtained by ??myvar\n and that's it ...", escape_var='?')
+        template = Template("The value of myvar is '?myvar' obtained by ??myvar\n and that's it ...", dict(), escape_var='?')
         template.compile()
         # print(template.ctemplate)
         myvar = 42
@@ -31,7 +31,7 @@ class TestBasicTemplates(unittest.TestCase):
     def test_inline_escape_var(self):
         template = Template(
             """The value of myvar is '%"{}".format(myvar)%' with inline escape char '%%'
-            and that's it...""")
+            and that's it...""", dict())
         template.compile()
         #print(template.ctemplate)
         myvar = 42
@@ -41,7 +41,7 @@ class TestBasicTemplates(unittest.TestCase):
     def test_alt_inline_escape_var(self):
         template = Template(
             """The value of myvar is '$"{}".format(myvar)$' with inline escape char '$$'
-            and that's it...""", escape_var="?", escape_inline="$")
+            and that's it...""", dict(), escape_var="?", escape_inline="$")
         template.compile()
         #print(template.ctemplate)
         myvar = 42
@@ -51,7 +51,7 @@ class TestBasicTemplates(unittest.TestCase):
     def test_block_escape_var(self):
         template = Template(
             """The value of myvar is '%{emit("{}".format(myvar))%}' with block escape char '%%'
-            and that's it...""")
+            and that's it...""", dict())
         template.compile()
         #print(template.ctemplate)
         myvar = 42

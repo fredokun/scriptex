@@ -25,7 +25,7 @@ class TestExos(unittest.TestCase):
         print("Before processing = \n" + str(doc));
 
         process = DocumentProcessor(doc)
-        py_ctx = codeactive.PythonContext()
+        py_ctx = codeactive.PythonContext(dict())
         codeactive.register_processors(process, py_ctx)
         process.process()
 
@@ -45,7 +45,7 @@ def fact(n):
         #print("Before processing = \n" + str(doc));
 
         process = DocumentProcessor(doc)
-        py_ctx = codeactive.PythonContext()
+        py_ctx = codeactive.PythonContext(dict())
         codeactive.register_processors(process, py_ctx)
         process.process()
 
@@ -62,7 +62,7 @@ def fact(n):
         # 2) processing
         processor = DocumentProcessor(doc)
         core.register_core_processors(processor)
-        py_ctx = codeactive.PythonContext()
+        py_ctx = codeactive.PythonContext(dict())
         codeactive.register_processors(processor, py_ctx)
 
         try:

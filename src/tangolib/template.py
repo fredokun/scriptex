@@ -268,8 +268,6 @@ class Template:
             genv = self.template.global_env
             renv = self.template._install_render_env(env)
 
-            #import pdb; pdb.set_trace()
-
             ret = eval(self.inline_code, genv, renv)
 
             return "{}".format(ret)
