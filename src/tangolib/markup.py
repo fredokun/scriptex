@@ -342,7 +342,7 @@ class Newlines(AbstractMarkup):
         super().__init__(doc, start_pos, end_pos)
         self.newlines = newlines
 
-        self.markyup_type = "newlines"
+        self.markup_type = "newlines"
 
     def __repr__(self):
         return "Newlines({})".format(len(self.newlines))

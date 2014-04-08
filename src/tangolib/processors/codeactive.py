@@ -48,7 +48,7 @@ class EvalPythonProcessor(CommandProcessor):
         # BREAKPOINT >>> # import pdb; pdb.set_trace()  # <<< BREAKPOINT #
         ret = self.python_context.eval_python_expr(cmd.content, processor.document.filename, cmd.header_end_pos.lpos)
         output = self.python_context.pprint.pformat(ret)
-        return (markup.Preformated(cmd.doc, output, "python-3", cmd.start_pos, cmd.end_pos), False)
+        return (markup.Preformated(cmd.doc, output, "python", cmd.start_pos, cmd.end_pos), False)
 
 class ExecPythonProcessor(CommandProcessor):
     def __init__(self, python_context):

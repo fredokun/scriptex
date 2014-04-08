@@ -129,7 +129,7 @@ class DefaultLatexCommandGenerator(CommandGenerator):
         pass
     
     def enter_command(self, generator, cmd):
-        opts_str = "" if cmd.cmd_opts is None else "[{}]".format(cmd.cmd_opts)
+        opts_str = "" if cmd.cmd_opts is None else "[{}]".format(cmd.cmd_opts if cmd.cmd_opts else "")
         open_str = "" if not cmd.content else "{"
         generator.output.append(cmd.start_pos.lpos, "\\{}".format(cmd.cmd_name) + opts_str + open_str)
 
@@ -199,10 +199,10 @@ class LatexNewlinesGenerator(NewlinesGenerator):
         pass
 
     def on_newlines(self, generator, newlines):
-        lpos = newlines.start_pos.lpos
-        for _ in newlines.newlines:
+        generator.output.newline(None)
+        if len(newlines.newlines) >= 2:
             generator.output.newline(None)
-            lpos += 1
+
 
 
 
